@@ -26,6 +26,9 @@ task("faucet", "Sends ETH and tokens to an address", async () => {
   await tx2.wait();
 
   console.log(`Transferred 1 ETH to ${receiver}`);
+
+  const balance = await sender.getBalance();
+  console.log(`${balance / 10 ** 18}`);
 });
 
 // You need to export an object to set up your config
@@ -34,20 +37,35 @@ task("faucet", "Sends ETH and tokens to an address", async () => {
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */
+// module.exports = {
+//   solidity: "0.8.4",
+//   networks: {
+//     ropsten: {
+//       url: process.env.ROPSTEN_URL || "",
+//       accounts:
+//         process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+//     },
+//   },
+//   gasReporter: {
+//     enabled: process.env.REPORT_GAS !== undefined,
+//     currency: "INR",
+//   },
+//   etherscan: {
+//     apiKey: process.env.ETHERSCAN_API_KEY,
+//   },
+// };
+
 module.exports = {
   solidity: "0.8.4",
+  defaultNetwork: "localhost",
   networks: {
-    ropsten: {
-      url: process.env.ROPSTEN_URL || "",
-      accounts:
-        process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+    localhost: {
+      url: "http://127.0.0.1:8545",
     },
-  },
-  gasReporter: {
-    enabled: process.env.REPORT_GAS !== undefined,
-    currency: "INR",
-  },
-  etherscan: {
-    apiKey: process.env.ETHERSCAN_API_KEY,
+    hardhat: {
+      forking: {
+        url: "https://eth-mainnet.alchemyapi.io/v2/tCuQODC_04X14S9A9qIaqdA03lzag1yb",
+      },
+    },
   },
 };
