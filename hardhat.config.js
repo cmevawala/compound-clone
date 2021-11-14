@@ -15,6 +15,19 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
   }
 });
 
+task("faucet", "Sends ETH and tokens to an address", async () => {
+  const [sender] = await hre.ethers.getSigners();
+  const receiver = "0xfEEC97FAD402bFaCBD36098ea2cB829CC7Cf2944";
+
+  const tx2 = await sender.sendTransaction({
+    to: receiver,
+    value: hre.ethers.constants.WeiPerEther,
+  });
+  await tx2.wait();
+
+  console.log(`Transferred 1 ETH to ${receiver}`);
+});
+
 // You need to export an object to set up your config
 // Go to https://hardhat.org/config/ to learn more
 
@@ -32,7 +45,7 @@ module.exports = {
   },
   gasReporter: {
     enabled: process.env.REPORT_GAS !== undefined,
-    currency: "USD",
+    currency: "INR",
   },
   etherscan: {
     apiKey: process.env.ETHERSCAN_API_KEY,
