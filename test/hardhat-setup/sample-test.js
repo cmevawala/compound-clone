@@ -1,6 +1,5 @@
-const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const IERC20Json = require("../artifacts/contracts/IERC20.sol/IERC20.json");
+const IERC20Json = require("../../artifacts/contracts/hardhat-setup/IERC20.sol/IERC20.json");
 const { formatEther } = require("ethers/lib/utils");
 
 // describe("Greeter", function () {

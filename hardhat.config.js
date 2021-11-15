@@ -2,7 +2,7 @@ require("dotenv").config();
 
 require("@nomiclabs/hardhat-etherscan");
 require("@nomiclabs/hardhat-waffle");
-require("hardhat-gas-reporter");
+// require("hardhat-gas-reporter");
 require("solidity-coverage");
 
 // This is a sample Hardhat task. To learn how to create your own go to
@@ -57,7 +57,6 @@ task("faucet", "Sends ETH and tokens to an address", async () => {
 
 module.exports = {
   solidity: "0.8.4",
-  defaultNetwork: "localhost",
   networks: {
     localhost: {
       url: "http://127.0.0.1:8545",
