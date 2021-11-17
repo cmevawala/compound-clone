@@ -5,9 +5,12 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "hardhat/console.sol";
 
 import "./CTokenStorage.sol";
+import "./InterestRateModel.sol";
 
 contract CEth is ERC20, CTokenStorage {
     uint256 scaleBy = 10**decimals();
+
+    InterestRateModel interestRateModel;
 
     event Mint(address minter, uint256 mintAmount, uint256 mintTokens);
     event Redeem(address redeemer, uint256 redeemAmount, uint256 redeemTokens);
@@ -20,6 +23,10 @@ contract CEth is ERC20, CTokenStorage {
         require(_initialExchangeRate > 0, "initial exchange rate must be greater than zero.");
 
         initialExchangeRate = _initialExchangeRate;
+
+        interestRateModel = new InterestRateModel();
+
+        accrualBlockNumber = block.number;
     }
 
 
@@ -117,5 +124,26 @@ contract CEth is ERC20, CTokenStorage {
     /// @return The quantity of Ether owned by this contract
     function getCashPrior() internal view returns (uint256) {
         return address(this).balance - msg.value;
+    }
+
+    /// @notice Explain to an end user what this does
+    /// @return Documents the return variables of a contract’s function state variable
+    function acrrueInterest() public returns (uint) {
+
+        uint currentBlockNumber = block.number;
+        uint accrualBlockNumberPrior = accrualBlockNumber;
+
+        require(accrualBlockNumberPrior != currentBlockNumber, "INVALID_BLOCK_NUMBER");
+
+        /* Read the previous values out of storage */
+        uint cashPrior = getCashPrior();
+        uint borrowsPrior = totalBorrows;
+        uint reservesPrior = totalReserves;
+
+        // InterestRateModel
+
+        // console.log(interestRateModel);
+
+        uint blockDelta = currentBlockNumber - accrualBlockNumber;
     }
 }

@@ -15,4 +15,10 @@ contract CTokenStorage {
     /// @notice Total amount of reserves of the underlying held in this market
     uint public totalReserves;
 
+    /// @notice Fraction of interest currently set aside for reserves
+    uint constant public reserveFactorMantissa = 5 ether;
+
+    /// @notice Block number that interest was last accrued at
+    uint public accrualBlockNumber;
+
 }

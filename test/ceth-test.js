@@ -2,7 +2,7 @@ const { ethers } = require("hardhat");
 const { formatEther, parseEther } = require("ethers/lib/utils");
 const { expect } = require("chai");
 
-describe.only("CToken Tests", function () {
+describe("CToken Tests", function () {
   let CEthContract, cEth;
   let owner, s1;
 

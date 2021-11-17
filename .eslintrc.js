@@ -19,4 +19,7 @@ module.exports = {
       globals: { task: true },
     },
   ],
+  maxLen: {
+    code: "100"
+  }
 };
