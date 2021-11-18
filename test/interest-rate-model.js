@@ -1,8 +1,8 @@
 const { ethers } = require("hardhat");
-const { formatEther, parseEther, formatUnits } = require("ethers/lib/utils");
+const { parseEther, formatUnits } = require("ethers/lib/utils");
 const { expect } = require("chai");
 
-describe.only("Interest Rate Model Tests", function () {
+describe("Interest Rate Model Tests", function () {
   let InterestRateModelContract, interestRateModel;
   let owner, s1;
 

@@ -55,16 +55,25 @@ contract CEth is ERC20, CTokenStorage {
 
     /// @notice Accrue interest then return the up-to-date exchange rate
     /// @return Calculated exchange rate
-    function exchangeRate() public view returns (uint256) {
+    function exchangeRateCurrent() public returns (uint) {
+        require(accrueInterest() == true, "accrue interest failed");
+
+        return calculateExchangeRate();
+    }
+
+    /// @notice Accrue interest then return the up-to-date exchange rate
+    /// @return Calculated exchange rate
+    function exchangeRateStored() view public returns (uint) {
         return calculateExchangeRate();
     }
 
     /// @notice Explain to an end user what this does
     /// @return Documents the return variables of a contract’s function state variable
-    function balanceOfUnderlying() external pure returns(uint) {
-        return 0;
-    }
+    function balanceOfUnderlying(address owner) external returns(uint) {
+        require(balanceOf(owner) > 0, "NOT_HAVING_ENOUGH_CTOKENS");
 
+        return exchangeRateCurrent() * balanceOf(owner);
+    }
 
     /// @notice Explain to an end user what this does
     /// @return Documents the return variables of a contract’s function state variable
@@ -128,7 +137,7 @@ contract CEth is ERC20, CTokenStorage {
 
     /// @notice Explain to an end user what this does
     /// @return Documents the return variables of a contract’s function state variable
-    function acrrueInterest() public returns (uint) {
+    function accrueInterest() public returns (bool) {
 
         uint currentBlockNumber = block.number;
         uint accrualBlockNumberPrior = accrualBlockNumber;
@@ -140,10 +149,37 @@ contract CEth is ERC20, CTokenStorage {
         uint borrowsPrior = totalBorrows;
         uint reservesPrior = totalReserves;
 
-        // InterestRateModel
-
-        // console.log(interestRateModel);
+        uint borrowRate = interestRateModel.getBorrowRate(cashPrior, borrowsPrior, reservesPrior);
 
         uint blockDelta = currentBlockNumber - accrualBlockNumber;
+
+        uint simpleInterestFactor = borrowRate * blockDelta;
+        uint interestAccumulated = simpleInterestFactor * borrowsPrior;
+        uint borrowsNew = interestAccumulated + borrowsPrior;
+        uint reservesNew = (interestAccumulated * reserveFactorMantissa) + reservesPrior;
+
+        accrualBlockNumber = currentBlockNumber;
+        totalBorrows = borrowsNew;
+        totalReserves = reservesNew;
+
+        return true;
     }
+
+
+    /**
+     * @notice Returns the current per-block borrow interest rate for this cToken
+     * @return The borrow interest rate per block, scaled by 1e18
+     */
+    function borrowRatePerBlock() external view returns (uint) {
+        return interestRateModel.getBorrowRate(getCashPrior(), totalBorrows, totalReserves);
+    }
+
+    /**
+     * @notice Returns the current per-block supply interest rate for this cToken
+     * @return The supply interest rate per block, scaled by 1e18
+     */
+    function supplyRatePerBlock() external view returns (uint) {
+        return interestRateModel.getSupplyRate(getCashPrior(), totalBorrows, totalReserves, reserveFactorMantissa);
+    }
+
 }
