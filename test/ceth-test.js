@@ -1,52 +1,75 @@
-const { ethers } = require("hardhat");
-const { formatEther, parseEther } = require("ethers/lib/utils");
-const { expect } = require("chai");
+// const { ethers } = require("hardhat");
+// const { formatEther, parseEther, formatUnits } = require("ethers/lib/utils");
+// const { expect } = require("chai");
 
-describe("CToken Tests", function () {
-  let CEthContract, cEth;
-  let owner, s1;
+// describe.only("CToken Tests", function () {
+//   let CEthContract, cEth;
+//   let owner, s1, s2, s3, s4, s5;
 
-  beforeEach(async function () {
-    // Get the ContractFactory and Signers here.
-    [owner, s1] = await ethers.getSigners();
-    CEthContract = await ethers.getContractFactory("CEth");
+//   beforeEach(async function () {
+//     // Get the ContractFactory and Signers here.
+//     [owner, s1, s2, s3, s4, s5] = await ethers.getSigners();
+//     CEthContract = await ethers.getContractFactory("CEth");
 
-    cEth = await CEthContract.deploy(parseEther("0.020000"));
-  });
+//     cEth = await CEthContract.deploy(parseEther("0.020000"));
+//   });
 
-  it("should mint CETH on supply of ETH", async function () {
-    expect(formatEther(await s1.getBalance())).to.be.equals("10000.0");
+//   it("should mint CETH on supply of ETH", async function () {
+//     expect(formatEther(await s1.getBalance())).to.be.equals("10000.0");
 
-    const overrides = { value: parseEther("1") };
-    await cEth.connect(s1).mint(overrides);
+//     const overrides = { value: parseEther("1") };
+//     await cEth.connect(s1).mint(overrides);
 
-    expect(
-      formatEther(await ethers.provider.getBalance(cEth.address))
-    ).to.be.equals("1.0");
+//     expect(
+//       formatEther(await ethers.provider.getBalance(cEth.address))
+//     ).to.be.equals("1.0");
 
-    const cTokenBalance = await cEth.balanceOf(s1.address);
-    expect(formatEther(cTokenBalance)).to.be.equals("50.0");
-  });
+//     const cTokenBalance = await cEth.balanceOf(s1.address);
+//     expect(formatEther(cTokenBalance)).to.be.equals("50.0");
+//   });
 
-  it("should display the current exchange rate", async function () {
-    const exchangeRate = formatEther(await cEth.exchangeRate());
-    // eslint-disable-next-line no-unused-expressions
-    expect(exchangeRate).not.to.be.undefined;
-  });
+//   it("should display the current exchange rate", async function () {
+//     const exchangeRate = formatEther(await cEth.exchangeRate());
+//     // eslint-disable-next-line no-unused-expressions
+//     expect(exchangeRate).not.to.be.undefined;
+//   });
 
-  it("should allow the user to redeem the CETH", async function () {
-    const overrides = { value: parseEther("1") };
-    await cEth.connect(s1).mint(overrides);
+//   it("should allow the user to redeem the CETH", async function () {
 
-    let cTokenBalance = await cEth.balanceOf(s1.address);
-    await cEth.connect(s1).redeem(cTokenBalance);
+//     const overrides = { value: parseEther("1") };
+//     await cEth.connect(s1).mint(overrides);
 
-    cTokenBalance = await cEth.balanceOf(s1.address);
-    expect(formatEther(cTokenBalance)).to.be.equals("0.0");
+//     console.log("ETH before Redeeming CETH: " + formatEther(await s1.getBalance()));
 
-    expect(
-      formatEther(await ethers.provider.getBalance(cEth.address))
-    ).to.be.equals("0.0");
-  });
+//     let cTokenBalance = await cEth.balanceOf(s1.address);
+//     await cEth.connect(s1).redeem(cTokenBalance);
 
-});
+//     expect(
+//       formatEther(await ethers.provider.getBalance(cEth.address))
+//     ).to.be.equals("0.0");
+
+//     cTokenBalance = await cEth.balanceOf(s1.address);
+//     expect(formatEther(cTokenBalance)).to.be.equals("0.0");
+
+//     console.log("ETH after Redeeming CETH: "  + formatEther(await s1.getBalance()));
+//   });
+
+//   it.only("should display the underlying balance of CETH", async function () {
+
+//     const overrides = { value: parseEther("1") };
+
+//     let suppliers = [s1, s2, s3];
+
+//     for (let i = 0; i < 1; i++) {
+//       for (let j = 0; j < suppliers.length; j++) {
+//         await cEth.connect(suppliers[j]).mint(overrides);
+//       }
+//     }
+    
+//     // console.log("ETH before Redeeming CETH: " + formatEther(await s1.getBalance()));
+
+//     const balanceUnderlying = await cEth.balanceOfUnderlying(s1.address);
+//     // console.log(formatEther(balanceUnderlying));
+//   });
+
+// });

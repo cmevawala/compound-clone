@@ -6,52 +6,50 @@ import "hardhat/console.sol";
 contract InterestRateModel {
 
     uint constant scaleBy = 10**18;
-    uint constant oneMinusSpreadBasisPoints = 9000;
+    
     uint constant BLOCKS_PER_YEAR = 2102400;
 
-    uint constant MULTIPLIER = 45; // 45%
-    uint constant BASE_RATE = 5 * 10**18; // 5%
+    uint constant MULTIPLIER = (3 * 10**17); // 30%
 
-    /// @dev Calculates the utilization rate (borrows / (cash + borrows))
-    function getUtilizationRate(uint cash, uint borrows) pure internal returns (uint) {
+    uint constant BASE_RATE = (2 * 10**16); // 2%
 
-        require(borrows > 0, "ZERO_UTILIZATION_RATE_WHEN_BORROW_IS_ZERO");
 
-        return ( borrows * scaleBy ) / ( cash + borrows ); // 100 ETH / 900 ETH ~ 0.1 i.e. 10%
+    /// @dev Calculates the utilization rate (borrows / (cash + borrows)) - reserves. 
+    /// @dev https://ian.pw/posts/2020-12-20-understanding-compound-protocols-interest-rates
+    function getUtilizationRate(uint cash, uint borrows, uint reserves) pure internal returns (uint) {
+
+        if (borrows == 0) return 0;
+
+        return ( borrows * scaleBy ) / ( cash + borrows - reserves ) ; // 1000 ETH / 10000 ETH ~ 0.1 i.e. 10%
     }
 
-    /// @dev Calculates the utilization and borrow rates for use by get{Supply,Borrow}Rate functions
-    function getUtilizationAndAnnualBorrowRate(uint cash, uint borrows) pure internal returns (uint utilizationRate, uint annualBorrowRate) {
+    /// @notice Calculates the current borrow rate per block
+    /// @param cash a parameter just like in doxygen (must be followed by parameter name)
+    /// @param borrows a parameter just like in doxygen (must be followed by parameter name)
+    /// @param reserves a parameter just like in doxygen (must be followed by parameter name)
+    /// @return borrowRate The borrow rate percentage (scaled by 1e18)
+    function getBorrowRate(uint cash, uint borrows, uint reserves) pure public returns (uint borrowRate) {
 
-        utilizationRate = getUtilizationRate(cash, borrows);
+        uint utilizationRate = getUtilizationRate(cash, borrows, reserves);
 
-        uint utilizationRateMuled = utilizationRate * MULTIPLIER / 100;
-
-        // Borrow Interest Rate = ( Multiplier * Utilization Rate ) + Base Rate
-        annualBorrowRate = utilizationRateMuled + BASE_RATE;
+        borrowRate = (( MULTIPLIER * utilizationRate ) / scaleBy) + BASE_RATE; // 0.3 * 0.1 + 0.02 = 0.05 ~ 5%
     }
 
-    function getSupplyRate(uint cash, uint borrows) pure external returns (uint supplyRate) {
-        uint utilizationRate;
-        uint annualBorrowRate;
-
-        (utilizationRate, annualBorrowRate) = getUtilizationAndAnnualBorrowRate(cash, borrows);
-
-        // Supply Rate =  BorrowingInterest * Utilization Rate * (1 - Reserve Factor)
-        uint utilizationRate1 = utilizationRate * oneMinusSpreadBasisPoints;
-
-        uint doubleScaledProductWithHalfScale = ( annualBorrowRate * utilizationRate1 ) + ( scaleBy / 2 );
-
-        uint supplyRate0 = doubleScaledProductWithHalfScale / scaleBy;
-
-        supplyRate = supplyRate0 / ( 10000 * BLOCKS_PER_YEAR );
+    function getBorrowRatePerBlock(uint cash, uint borrows, uint reserves) pure public returns (uint borrowRate) {
+        return getBorrowRate(cash, borrows, reserves) / BLOCKS_PER_YEAR;
     }
 
-    function getBorrowRate(uint cash, uint borrows) pure external returns (uint borrowRate) {
-        uint utilizationRate;
-        uint annualBorrowRate;
+    /// @notice Calculates the current supply rate per block
+    /// @param cash a parameter just like in doxygen (must be followed by parameter name)
+    /// @param borrows a parameter just like in doxygen (must be followed by parameter name)
+    /// @param reserves a parameter just like in doxygen (must be followed by parameter name)
+    /// @return supplyRate The supply rate percentage (scaled by 1e18)
+    function getSupplyRate(uint cash, uint borrows, uint reserves, uint reserveFactor) pure external returns (uint supplyRate) {
 
-        (utilizationRate, annualBorrowRate) = getUtilizationAndAnnualBorrowRate(cash, borrows);
-        borrowRate = annualBorrowRate / BLOCKS_PER_YEAR;
+        uint oneMinusReserveFactor = (1 * scaleBy) - reserveFactor; // 0.8
+
+        uint borrowRate = getBorrowRate(cash, borrows, reserves); // 0.1
+
+        return (borrowRate * getUtilizationRate(cash, borrows, reserves) * oneMinusReserveFactor) / scaleBy / scaleBy; // 0.05 * 0.1 * 0.8 = 0.004 ~ 0.4%
     }
 }
