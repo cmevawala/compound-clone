@@ -23,7 +23,7 @@ contract InterestRateModel {
         return ( borrows * scaleBy ) / ( cash + borrows - reserves ) ; // 1000 ETH / 10000 ETH ~ 0.1 i.e. 10%
     }
 
-    /// @notice Calculates the current borrow rate per block
+    /// @notice Calculates the current borrow rate
     /// @param cash a parameter just like in doxygen (must be followed by parameter name)
     /// @param borrows a parameter just like in doxygen (must be followed by parameter name)
     /// @param reserves a parameter just like in doxygen (must be followed by parameter name)
@@ -35,6 +35,11 @@ contract InterestRateModel {
         borrowRate = (( MULTIPLIER * utilizationRate ) / scaleBy) + BASE_RATE; // 0.3 * 0.1 + 0.02 = 0.05 ~ 5%
     }
 
+    /// @notice Calculates the current borrow rate per block
+    /// @param cash a parameter just like in doxygen (must be followed by parameter name)
+    /// @param borrows a parameter just like in doxygen (must be followed by parameter name)
+    /// @param reserves a parameter just like in doxygen (must be followed by parameter name)
+    /// @return borrowRate The borrow rate percentage (scaled by 1e18)
     function getBorrowRatePerBlock(uint cash, uint borrows, uint reserves) pure public returns (uint borrowRate) {
         return getBorrowRate(cash, borrows, reserves) / BLOCKS_PER_YEAR;
     }

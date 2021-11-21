@@ -58,9 +58,6 @@ task("faucet", "Sends ETH and tokens to an address", async () => {
 module.exports = {
   solidity: "0.8.4",
   networks: {
-    localhost: {
-      url: "http://127.0.0.1:8545",
-    },
     hardhat: {
       forking: {
         url: "https://eth-mainnet.alchemyapi.io/v2/tCuQODC_04X14S9A9qIaqdA03lzag1yb",

@@ -2,7 +2,7 @@ const { ethers } = require("hardhat");
 const { formatEther, parseEther, formatUnits } = require("ethers/lib/utils");
 const { expect } = require("chai");
 
-describe.only("CToken Tests", function () {
+describe("CETH Tests", function () {
   let CEthContract, cEth;
   let owner, s1, s2, s3, s4, s5;
 
@@ -55,7 +55,7 @@ describe.only("CToken Tests", function () {
     // console.log("ETH after Redeeming CETH: "  + formatEther(await s1.getBalance()));
   });
 
-  it.only("should display the underlying balance of CETH", async function () {
+  it("should display the underlying balance of CETH", async function () {
 
     const overrides = { value: parseEther("1") };
 
@@ -68,7 +68,6 @@ describe.only("CToken Tests", function () {
     // console.log("ETH before Redeeming CETH: " + formatEther(await s1.getBalance()));
 
     const balanceUnderlying = await cEth.callStatic.balanceOfUnderlying(s1.address);
-    console.log(formatUnits(balanceUnderlying));
   });
 
 });

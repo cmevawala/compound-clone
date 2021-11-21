@@ -7,21 +7,37 @@ import "./CToken.sol";
 import "hardhat/console.sol";
 
 
-contract CEth is CToken {
+contract CDai is CToken {
 
     /// @notice Initialize the money market
     /// @param _initialExchangeRate The initial exchange rate, scaled by 1e18
-    constructor(uint256 _initialExchangeRate) CToken(_initialExchangeRate, "CETH Token", "CETH") {
+    constructor(uint256 _initialExchangeRate) CToken(_initialExchangeRate, "CDAI Token", "CDAI") {
         admin = msg.sender;
     }
 
     /// @notice User supplies assets into the market and receives cTokens in exchange
+    /// @param _erc20Contract a parameter just like in doxygen (must be followed by parameter name)
+    /// @param _numOfTokens a parameter just like in doxygen (must be followed by parameter name)
     /// @return Whether or not the transfer succeeded
-    function mint() external payable returns (bool) {
+    function supply(address _erc20Contract, uint _numOfTokens) external returns (bool) {
 
-        mintInternal(msg.sender, msg.value);
+        ERC20 erc20 = ERC20(_erc20Contract);
+
+        erc20.approve(address(this), _numOfTokens);
+        erc20.transfer(address(this), _numOfTokens);
+
+        mintInternal(msg.sender, _numOfTokens);
+
         return true;
     }
+
+    // /// @notice User supplies assets into the market and receives cTokens in exchange
+    // /// @return Whether or not the transfer succeeded
+    // function mint() external payable returns (bool) {
+
+    //     mintInternal(msg.sender, msg.value);
+    //     return true;
+    // }
 
     /// @notice Explain to an end user what this does
     /// @return Documents the return variables of a contract’s function state variable
@@ -55,12 +71,4 @@ contract CEth is CToken {
     function supplyRatePerBlock() external view returns (uint) {
         return interestRateModel.getSupplyRate(getCash(), totalBorrows, totalReserves, reserveFactorMantissa);
     }
-
-    // collateral / collateral factor
-    // calculate account liquidity - how much you can borrow
-    // open price feed - USD price of token to borrow
-    // enter market and borrow
-    // borrowed balance
-    // borrow rate
-    // repay borrow
 }
