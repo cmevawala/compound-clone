@@ -15,7 +15,7 @@ describe("CETH Tests", function () {
   });
 
   it("should mint CETH on supply of ETH", async function () {
-    expect(formatEther(await s1.getBalance())).to.be.equals("10000.0");
+    // expect(formatEther(await s1.getBalance())).to.be.equals("10000.0");
 
     const overrides = { value: parseEther("1") };
     await cEth.connect(s1).mint(overrides);
@@ -55,19 +55,19 @@ describe("CETH Tests", function () {
     // console.log("ETH after Redeeming CETH: "  + formatEther(await s1.getBalance()));
   });
 
-  it("should display the underlying balance of CETH", async function () {
+  // it("should display the underlying balance of CETH", async function () {
 
-    const overrides = { value: parseEther("1") };
+  //   const overrides = { value: parseEther("1") };
 
-    let suppliers = [s1, s2, s3];
+  //   let suppliers = [s1, s2, s3];
 
-    await cEth.connect(s1).mint(overrides);
-    await cEth.connect(s2).mint(overrides);
-    await cEth.connect(s3).mint(overrides);
+  //   await cEth.connect(s1).mint(overrides);
+  //   await cEth.connect(s2).mint(overrides);
+  //   await cEth.connect(s3).mint(overrides);
 
-    // console.log("ETH before Redeeming CETH: " + formatEther(await s1.getBalance()));
+  //   // console.log("ETH before Redeeming CETH: " + formatEther(await s1.getBalance()));
 
-    const balanceUnderlying = await cEth.callStatic.balanceOfUnderlying(s1.address);
-  });
+  //   const balanceUnderlying = await cEth.callStatic.balanceOfUnderlying(s1.address);
+  // });
 
 });

@@ -20,6 +20,7 @@ contract CEth is CToken {
     function mint() external payable returns (bool) {
 
         mintInternal(msg.sender, msg.value);
+
         return true;
     }
 
@@ -54,6 +55,24 @@ contract CEth is CToken {
      /// @return The supply interest rate per block, scaled by 1e18
     function supplyRatePerBlock() external view returns (uint) {
         return interestRateModel.getSupplyRate(getCash(), totalBorrows, totalReserves, reserveFactorMantissa);
+    }
+
+    /// @notice Gets balance of this contract in terms of Ether, before this message
+    /// @return The quantity of Ether owned by this contract
+    function getCash() internal override view returns (uint) {
+        return address(this).balance - msg.value;
+    }
+
+    function doTransferIn(address from, uint amount) internal override returns (uint) {
+        return 0;
+    }
+
+    function doTransferOut(address to, uint amount) internal override returns (bool) {
+        (bool success, ) = to.call{ value: amount}("");
+
+        require(success, "REDEEM_FAILED");
+
+        return success;
     }
 
     // collateral / collateral factor

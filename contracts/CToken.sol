@@ -8,7 +8,7 @@ import "./InterestRateModel.sol";
 import "hardhat/console.sol";
 
 
-contract CToken is ERC20, CTokenInterface {
+abstract contract CToken is ERC20, CTokenInterface {
 
     InterestRateModel public interestRateModel;
 
@@ -30,17 +30,19 @@ contract CToken is ERC20, CTokenInterface {
     }
 
     /// @notice User supplies assets into the market and receives cTokens in exchange
-    function mintInternal(address minter, uint256 _mintAmount) internal {
+    function mintInternal(address _minter, uint256 _mintAmount) internal {
         /*
          * We get the current exchange rate and calculate the number of cTokens to be minted:
          * mintTokens = actualMintAmount / exchangeRate [WEI]
          */
-         
+
+        doTransferIn(_minter, _mintAmount);
+
         uint256 mintTokens = (_mintAmount / calculateExchangeRate()) * scaleBy;
 
-        _mint(minter, mintTokens);
+        _mint(_minter, mintTokens);
 
-        emit Mint(minter, _mintAmount, mintTokens);
+        emit Mint(_minter, _mintAmount, mintTokens);
     }
 
     /// @notice Accrue interest then return the up-to-date exchange rate
@@ -111,12 +113,6 @@ contract CToken is ERC20, CTokenInterface {
         }
     }
 
-    /// @notice Gets balance of this contract in terms of Ether, before this message
-    /// @return The quantity of Ether owned by this contract
-    function getCash() internal view returns (uint256) {
-        return address(this).balance - msg.value;
-    }
-
     /// @notice Explain to an end user what this does
     function redeemInternal(address redeemer, uint redeemTokens) internal {
 
@@ -126,12 +122,17 @@ contract CToken is ERC20, CTokenInterface {
         // Fail gracefully if protocol has insufficient cash
         require(getCash() >= redeemAmount, "INSUFFICIENT_CASH");
 
+        doTransferOut(redeemer, redeemAmount);
+
         // Burns amount
         _burn(redeemer, redeemTokens);
 
-        (bool success,) = redeemer.call{ value: redeemAmount}("");
-        require(success, "REDEEM_FAILED");
-
         emit Redeem(redeemer, redeemAmount, redeemTokens);
     }
+
+    function getCash() internal virtual view returns (uint);
+
+    function doTransferIn(address from, uint amount) internal virtual returns (uint);
+
+    function doTransferOut(address to, uint amount) internal virtual returns (bool);
 }

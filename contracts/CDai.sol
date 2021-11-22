@@ -9,35 +9,24 @@ import "hardhat/console.sol";
 
 contract CDai is CToken {
 
+    address erc20Contract;
+
     /// @notice Initialize the money market
     /// @param _initialExchangeRate The initial exchange rate, scaled by 1e18
-    constructor(uint256 _initialExchangeRate) CToken(_initialExchangeRate, "CDAI Token", "CDAI") {
+    constructor(address _erc20Contract, uint256 _initialExchangeRate) CToken(_initialExchangeRate, "CDAI Token", "CDAI") {
         admin = msg.sender;
+        erc20Contract = _erc20Contract;
     }
 
     /// @notice User supplies assets into the market and receives cTokens in exchange
-    /// @param _erc20Contract a parameter just like in doxygen (must be followed by parameter name)
     /// @param _numOfTokens a parameter just like in doxygen (must be followed by parameter name)
     /// @return Whether or not the transfer succeeded
-    function supply(address _erc20Contract, uint _numOfTokens) external returns (bool) {
-
-        ERC20 erc20 = ERC20(_erc20Contract);
-
-        erc20.approve(address(this), _numOfTokens);
-        erc20.transfer(address(this), _numOfTokens);
+    function mint(uint _numOfTokens) external returns (bool) {
 
         mintInternal(msg.sender, _numOfTokens);
 
         return true;
     }
-
-    // /// @notice User supplies assets into the market and receives cTokens in exchange
-    // /// @return Whether or not the transfer succeeded
-    // function mint() external payable returns (bool) {
-
-    //     mintInternal(msg.sender, msg.value);
-    //     return true;
-    // }
 
     /// @notice Explain to an end user what this does
     /// @return Documents the return variables of a contract’s function state variable
@@ -52,8 +41,10 @@ contract CDai is CToken {
     /// @return Documents the return variables of a contract’s function state variable
     function redeem(uint _redeemTokens) external returns(bool) {
 
-        require(balanceOf(msg.sender) > 0, "NO_TOKENS_AVAILABLE.");
+        ERC20 erc20 = ERC20(erc20Contract);
+
         require(_redeemTokens > 0, "REDEEM_TOKENS_GREATER_THAN_ZERO.");
+        require(erc20.balanceOf(msg.sender) > 0, "NO_TOKENS_AVAILABLE.");
 
         redeemInternal(msg.sender, _redeemTokens);
 
@@ -70,5 +61,26 @@ contract CDai is CToken {
      /// @return The supply interest rate per block, scaled by 1e18
     function supplyRatePerBlock() external view returns (uint) {
         return interestRateModel.getSupplyRate(getCash(), totalBorrows, totalReserves, reserveFactorMantissa);
+    }
+
+    /// @notice Gets balance of this contract in terms of Ether, before this message
+    /// @return The quantity of Ether owned by this contract
+    function getCash() internal override view returns (uint) {
+        ERC20 erc20 = ERC20(erc20Contract);
+        return erc20.balanceOf(address(this)) - msg.value;
+    }
+
+    function doTransferIn(address from, uint numberOfTokens) internal override returns (uint) {
+        ERC20 erc20 = ERC20(erc20Contract);
+        erc20.transferFrom(from, address(this), numberOfTokens);
+    }
+
+    function doTransferOut(address to, uint amount) internal override returns (bool) {
+        ERC20 erc20 = ERC20(erc20Contract);
+
+        erc20.approve(to, amount);
+        erc20.transferFrom(address(this), to, amount);
+
+        return true;
     }
 }
