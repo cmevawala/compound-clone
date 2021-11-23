@@ -3,9 +3,8 @@ const { formatUnits, parseUnits } = require("ethers/lib/utils");
 const { expect } = require("chai");
 
 const DaiABI = require("../abi/DaiABI.json");
-const { parse } = require("@ethersproject/transactions");
 
-describe.only("CDAI Tests", function () {
+describe("CDAI Tests", function () {
     let CDaiContract, cDai;
     let owner, s1, s2, s3, s4, s5;
     let daiContract, signer, daiBalance;
