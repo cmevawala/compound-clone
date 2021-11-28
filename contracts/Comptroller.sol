@@ -36,12 +36,16 @@ contract Comptroller {
         return allMarkets.length;
     }
 
+    function isMarketListed(address cToken) view external returns (bool) {
+        return markets[cToken].isListed;
+    }
+
     function addMarket(address cToken) external returns (bool) {
         require(msg.sender == admin, "RESTRICED_ACCESS");
 
         require(markets[cToken].isListed == false, "MARKET_ALREADY_LISTED");
 
-        markets[cToken] = Market({isListed: true, collateralFactor: 0});
+        markets[cToken] = Market({isListed: true, collateralFactor: 25});
 
         for (uint i = 0; i < allMarkets.length; i ++) {
             require(allMarkets[i] != CToken(cToken), "MARKET_ALREADY_LISTED");
@@ -76,7 +80,8 @@ contract Comptroller {
             CToken cToken = CToken(cTokens[i]);
 
             Market memory marketToJoin = markets[cTokens[i]];
-            require(marketToJoin.isListed == true, "MARKET_NOT_LISTED");
+
+            require(marketToJoin.isListed, "MARKET_NOT_LISTED");
 
             accountEnteredMarkets[msg.sender].push(cToken);
         }
@@ -86,32 +91,31 @@ contract Comptroller {
         return  true;
     }
 
-    function getAccountEnteredMarkets(address account) view external returns (CToken[] memory) {
-        return accountEnteredMarkets[account];
+    function getAccountEnteredMarkets(address borrower) view external returns (CToken[] memory) {
+        return accountEnteredMarkets[borrower];
     }
 
     // function exitMarket() {
     // }
 
-    function getAccountLiquidity(address account) view external returns (uint) {
+    function getAccountLiquidity(address borrower) view external returns (uint sum) {
 
-        CToken[] memory enteredMarkets = accountEnteredMarkets[account];
-
-        uint sum = 0;
+        CToken[] memory enteredMarkets = accountEnteredMarkets[borrower];
 
         for (uint i = 0; i < enteredMarkets.length; i++) {
 
             CToken cToken = enteredMarkets[i];
+
             Market memory market = markets[address(cToken)];
 
             uint price = oracle.getAssetPrice(cToken.symbol());
-            uint suppliedEth = (cToken.balanceOf(account) * cToken.exchangeRateStored()) / scaleBy;
+            uint suppliedEth = (cToken.balanceOf(borrower) * cToken.exchangeRateStored()) / scaleBy;
+
             uint ethForLiquidity = ( suppliedEth * market.collateralFactor ) / scaleBy;
             
             sum += (ethForLiquidity * price) / scaleBy;
+            sum -= cToken.borrowBalance(borrower);
         }
-
-        return sum - 0; // cToken.borrowBalance();
     }
 
 }

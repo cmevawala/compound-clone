@@ -3,6 +3,7 @@ pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "./CToken.sol";
+import "./Comptroller.sol";
 
 import "hardhat/console.sol";
 
@@ -13,7 +14,7 @@ contract CDai is CToken {
 
     /// @notice Initialize the money market
     /// @param _initialExchangeRate The initial exchange rate, scaled by 1e18
-    constructor(address _erc20Contract, uint256 _initialExchangeRate) CToken(_initialExchangeRate, "CDAI Token", "CDAI") {
+    constructor(address _erc20Contract, uint256 _initialExchangeRate, Comptroller _comptroller) CToken(_initialExchangeRate, _comptroller, "CDAI Token", "CDAI") {
         admin = msg.sender;
         erc20Contract = _erc20Contract;
     }
@@ -51,16 +52,10 @@ contract CDai is CToken {
         return true;
     }
 
-    /// @notice Returns the current per-block borrow interest rate for this cToken
-    /// @return The borrow interest rate per block, scaled by 1e18
-    function borrowRatePerBlock() external view returns (uint) {
-        return interestRateModel.getBorrowRate(getCash(), totalBorrows, totalReserves);
-    }
-
-     /// @notice Returns the current per-block supply interest rate for this cToken
-     /// @return The supply interest rate per block, scaled by 1e18
-    function supplyRatePerBlock() external view returns (uint) {
-        return interestRateModel.getSupplyRate(getCash(), totalBorrows, totalReserves, reserveFactorMantissa);
+    /// @notice Borrows assets from the protocol to their own address
+    /// @param borrowAmount a parameter just like in doxygen (must be followed by parameter name)
+    function borrow(uint borrowAmount) external returns(bool) {
+        return borrowInternal(borrowAmount);
     }
 
     /// @notice Gets balance of this contract in terms of Ether, before this message

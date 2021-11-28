@@ -4,13 +4,14 @@ pragma solidity ^0.8.4;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "./CTokenInterface.sol";
 import "./InterestRateModel.sol";
+import "./Comptroller.sol";
 
 import "hardhat/console.sol";
-
 
 abstract contract CToken is ERC20, CTokenInterface {
 
     InterestRateModel public interestRateModel;
+    Comptroller public comptroller;
 
     uint256 public scaleBy = 10**decimals();
 
@@ -19,14 +20,16 @@ abstract contract CToken is ERC20, CTokenInterface {
 
     /// @notice Initialize the money market
     /// @param _initialExchangeRate The initial exchange rate, scaled by 1e18
-    constructor(uint256 _initialExchangeRate, string memory name, string memory symbol) ERC20(name, symbol) {
+    constructor(uint256 _initialExchangeRate, Comptroller _comproller,  string memory name, string memory symbol) ERC20(name, symbol) {
         require(_initialExchangeRate > 0, "initial exchange rate must be greater than zero.");
 
         initialExchangeRate = _initialExchangeRate;
 
         interestRateModel = new InterestRateModel();
+        comptroller = _comproller;
 
         accrualBlockNumber = block.number;
+        borrowIndex = 1 ** scaleBy;
     }
 
     /// @notice User supplies assets into the market and receives cTokens in exchange
@@ -66,19 +69,21 @@ abstract contract CToken is ERC20, CTokenInterface {
         uint cashPrior = getCash();
         uint borrowsPrior = totalBorrows;
         uint reservesPrior = totalReserves;
+        uint borrowIndexPrior = borrowIndex;
 
         uint borrowRate = interestRateModel.getBorrowRate(cashPrior, borrowsPrior, reservesPrior);
 
         uint blockDelta = currentBlockNumber - accrualBlockNumber;
-
         uint simpleInterestFactor = borrowRate * blockDelta;
         uint interestAccumulated = simpleInterestFactor * borrowsPrior;
         uint borrowsNew = interestAccumulated + borrowsPrior;
         uint reservesNew = (interestAccumulated * reserveFactorMantissa) + reservesPrior;
+        uint borrowIndexNew = simpleInterestFactor + borrowIndexPrior;
 
         accrualBlockNumber = currentBlockNumber;
         totalBorrows = borrowsNew;
         totalReserves = reservesNew;
+        borrowIndex = borrowIndexNew;
 
         return true;
     }
@@ -91,7 +96,7 @@ abstract contract CToken is ERC20, CTokenInterface {
 
     /// @notice Calculates the exchange rate from the underlying to the CToken
     /// @return Calculated exchange rate scaled by 1e18
-    function calculateExchangeRate() internal view returns (uint256) {
+    function calculateExchangeRate() view internal  returns (uint256) {
         // 0.020000 => 20000000000000000
         uint256 _totalSupply = totalSupply();
         if (_totalSupply == 0) {
@@ -130,7 +135,84 @@ abstract contract CToken is ERC20, CTokenInterface {
         emit Redeem(redeemer, redeemAmount, redeemTokens);
     }
 
-    function getCash() internal virtual view returns (uint);
+    /// @notice Returns the current borrow interest rate APY for this cToken
+    /// @return The borrow interest APY, scaled by 1e18
+    function getBorrowRate() view external returns (uint) {
+        // TODO: Can Total Borrows increase than Supply ?
+        return interestRateModel.getBorrowRate(getCash(), totalBorrows, totalReserves);
+    }
+
+    // @notice Returns the current per-block borrow interest rate for this cToken
+    /// @return The borrow interest rate per block, scaled by 1e18
+    function getBorrowRatePerBlock() view external returns (uint) {
+        return interestRateModel.getBorrowRatePerBlock(getCash(), totalBorrows, totalReserves);
+    }
+
+    /// @notice Returns the current supply interest rate APY for this cToken
+    /// @return The supply interest rate APY, scaled by 1e18
+    function getSupplyRate() view external returns (uint) {
+        return interestRateModel.getSupplyRate(getCash(), totalBorrows, totalReserves, reserveFactorMantissa) ;
+    }
+
+    /// @notice Returns the current per-block supply interest rate for this cToken
+    /// @return The supply interest rate per block, scaled by 1e18
+    function getSupplyRatePerBlock() view external returns (uint) {
+        return interestRateModel.getSupplyRatePerBlock(getCash(), totalBorrows, totalReserves, reserveFactorMantissa) ;
+    }
+
+    /// @notice Allows users to borrow from Market
+    /// @param borrowAmount a parameter just like in doxygen (must be followed by parameter name)
+    /// @return Documents the return variables of a contract’s function state variable
+    function borrowInternal(uint borrowAmount) internal returns (bool) {
+
+        bool isListed = comptroller.isMarketListed(address(this));
+
+        require(isListed, "TOKEN_NOT_LISTED_IN_MARKET");
+    
+        // Get Underlying Price is Zero
+
+        // Insufficient Balance in the Market
+        require(getCash() >= borrowAmount, "INSUFFICIENT_BALANCE_FOR_BORROW");
+
+        // How much max the borrower can borrow - check liquidity
+        uint accountLiquidity = comptroller.getAccountLiquidity(msg.sender);
+
+        require(accountLiquidity > 0, "INSUFFICIENT_LIQUIDITY");
+
+        // Get Borrower Balance && Account Borrow += borrow
+        uint borrowBalanceNew = borrowBalance(msg.sender) + borrowAmount;
+
+        // Transfer to borrower;
+        doTransferOut(msg.sender, borrowAmount);
+
+        accountBorrows[msg.sender].principal += borrowBalanceNew;
+        accountBorrows[msg.sender].interestIndex = borrowIndex;
+        totalBorrows += borrowAmount;
+
+        // emit
+        return true;
+    }
+
+    function borrowBalanceCurrent(address borrower) external returns (uint) {
+        accrueInterest();
+
+        return borrowBalanceInternal(borrower);
+    }
+
+    function borrowBalance(address borrower) view public returns (uint) {
+        return borrowBalanceInternal(borrower);
+    }
+
+    function borrowBalanceInternal(address borrower) view internal returns (uint) {
+
+        BorrowSnapshot memory borrowSnapshot = accountBorrows[borrower];
+
+        if (borrowSnapshot.principal == 0) return 0;
+
+        return ( borrowSnapshot.principal * borrowIndex ) / borrowSnapshot.interestIndex;
+    } 
+
+    function getCash() virtual view internal returns (uint);
 
     function doTransferIn(address from, uint amount) internal virtual returns (uint);
 

@@ -16,9 +16,21 @@ contract CTokenInterface {
     uint public totalReserves;
 
     /// @notice Fraction of interest currently set aside for reserves
-    uint constant public reserveFactorMantissa = 20 ether;
+    uint constant public reserveFactorMantissa = 0.2 ether;
 
     /// @notice Block number that interest was last accrued at
     uint public accrualBlockNumber;
+
+    /// @notice Borrow information
+    struct BorrowSnapshot {
+        uint principal;
+        uint interestIndex;
+    }
+
+    /// @notice  Mapping of account addresses to outstanding borrow balances
+    mapping(address => BorrowSnapshot) internal accountBorrows;
+
+    /// @notice Total earned interest rate since the opening of the market
+    uint public borrowIndex;
 
 }

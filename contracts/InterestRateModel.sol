@@ -44,17 +44,26 @@ contract InterestRateModel {
         return getBorrowRate(cash, borrows, reserves) / BLOCKS_PER_YEAR;
     }
 
+    /// @notice Calculates the current supply rate
+    /// @param cash a parameter just like in doxygen (must be followed by parameter name)
+    /// @param borrows a parameter just like in doxygen (must be followed by parameter name)
+    /// @param reserves a parameter just like in doxygen (must be followed by parameter name)
+    /// @return supplyRate The supply rate percentage (scaled by 1e18)
+    function getSupplyRate(uint cash, uint borrows, uint reserves, uint reserveFactor) pure public returns (uint supplyRate) {
+
+        uint oneMinusReserveFactor = (1 * scaleBy) - reserveFactor; // 0.8
+
+        uint borrowRate = getBorrowRate(cash, borrows, reserves); // 0.05
+
+        return (borrowRate * getUtilizationRate(cash, borrows, reserves) * oneMinusReserveFactor) / scaleBy / scaleBy; // 0.05 * 0.1 * 0.8 = 0.004 ~ 0.4%
+    }
+
     /// @notice Calculates the current supply rate per block
     /// @param cash a parameter just like in doxygen (must be followed by parameter name)
     /// @param borrows a parameter just like in doxygen (must be followed by parameter name)
     /// @param reserves a parameter just like in doxygen (must be followed by parameter name)
     /// @return supplyRate The supply rate percentage (scaled by 1e18)
-    function getSupplyRate(uint cash, uint borrows, uint reserves, uint reserveFactor) pure external returns (uint supplyRate) {
-
-        uint oneMinusReserveFactor = (1 * scaleBy) - reserveFactor; // 0.8
-
-        uint borrowRate = getBorrowRate(cash, borrows, reserves); // 0.1
-
-        return (borrowRate * getUtilizationRate(cash, borrows, reserves) * oneMinusReserveFactor) / scaleBy / scaleBy; // 0.05 * 0.1 * 0.8 = 0.004 ~ 0.4%
+    function getSupplyRatePerBlock(uint cash, uint borrows, uint reserves, uint reserveFactor) pure public returns (uint supplyRate) {
+        return getSupplyRate(cash, borrows, reserves, reserveFactor) / BLOCKS_PER_YEAR;
     }
 }

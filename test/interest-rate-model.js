@@ -49,4 +49,11 @@ describe("Interest Rate Model Tests", function () {
 
   });
 
+  it("should get the current supply rate for ETH per Block", async function () {
+
+    const supplyRate = await interestRateModel.getSupplyRatePerBlock(9000, 1000, 0, parseEther("0.2"));
+    expect(formatUnits(supplyRate)).to.equals("0.000000001902587519");
+
+  });
+
 });
