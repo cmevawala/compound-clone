@@ -7,7 +7,6 @@ import "./Comptroller.sol";
 
 import "hardhat/console.sol";
 
-
 contract CEth is CToken {
 
     /// @notice Initialize the money market
@@ -71,12 +70,11 @@ contract CEth is CToken {
     }
 
     
-
     // collateral / collateral factor - done
     // calculate account liquidity - how much you can borrow - done
-    // open price feed - USD price of token to borrow 
-    // enter market and borrow
-    // borrowed balance
-    // borrow rate
+    // open price feed - USD price of token to borrow - done
+    // enter market and borrow - done
+    // borrowed balance - done
+    // borrow rate - done
     // repay borrow
 }

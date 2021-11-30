@@ -8,15 +8,19 @@ describe("CDAI Tests", function () {
     let CDaiContract, cDai;
     let owner, s1, s2, s3, s4, s5;
     let daiContract, signer, daiBalance;
+    let ComptrollerContract, comptroller;
 
     const daiAddress = "0x6b175474e89094c44da98b954eedeac495271d0f";
     const accountToInpersonate = "0x6F6C07d80D0D433ca389D336e6D1feBEA2489264";
 
     beforeEach(async function () {
+        ComptrollerContract = await ethers.getContractFactory("Comptroller");
+        comptroller = await ComptrollerContract.deploy();
+
         // Get the ContractFactory and Signers here.
         [owner, s1, s2, s3, s4, s5] = await ethers.getSigners();
         CDaiContract = await ethers.getContractFactory("CDai");
-        cDai = await CDaiContract.deploy(daiAddress, parseUnits("0.020000"));
+        cDai = await CDaiContract.deploy(daiAddress, parseUnits("0.020000"), comptroller.address);
 
         // Account Impersonate to get DAI
         await hre.network.provider.request({

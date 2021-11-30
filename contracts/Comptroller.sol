@@ -114,7 +114,7 @@ contract Comptroller {
             uint ethForLiquidity = ( suppliedEth * market.collateralFactor ) / scaleBy;
             
             sum += (ethForLiquidity * price) / scaleBy;
-            sum -= cToken.borrowBalance(borrower);
+            sum -= cToken.borrowBalanceStored(borrower);
         }
     }
 

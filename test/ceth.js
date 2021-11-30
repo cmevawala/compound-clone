@@ -5,13 +5,17 @@ const { expect } = require("chai");
 describe("CETH Tests", function () {
   let CEthContract, cEth;
   let owner, s1, s2, s3, s4, s5;
+  let ComptrollerContract, comptroller;
 
   beforeEach(async function () {
+    ComptrollerContract = await ethers.getContractFactory("Comptroller");
+    comptroller = await ComptrollerContract.deploy();
+
     // Get the ContractFactory and Signers here.
     [owner, s1, s2, s3, s4, s5] = await ethers.getSigners();
     CEthContract = await ethers.getContractFactory("CEth");
 
-    cEth = await CEthContract.deploy(parseEther("0.020000"));
+    cEth = await CEthContract.deploy(parseEther("0.020000"), comptroller.address);
   });
 
   it("should mint CETH on supply of ETH", async function () {

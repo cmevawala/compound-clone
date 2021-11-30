@@ -38,6 +38,7 @@ abstract contract CToken is ERC20, CTokenInterface {
          * We get the current exchange rate and calculate the number of cTokens to be minted:
          * mintTokens = actualMintAmount / exchangeRate [WEI]
          */
+        require(accrueInterest() == true, "ACCRUE_INTEREST_FAILED");
 
         doTransferIn(_minter, _mintAmount);
 
@@ -51,7 +52,7 @@ abstract contract CToken is ERC20, CTokenInterface {
     /// @notice Accrue interest then return the up-to-date exchange rate
     /// @return Calculated exchange rate
     function exchangeRateCurrent() public returns (uint) {
-        require(accrueInterest() == true, "accrue interest failed");
+        require(accrueInterest() == true, "ACCRUE_INTEREST_FAILED");
 
         return calculateExchangeRate();
     }
@@ -63,6 +64,12 @@ abstract contract CToken is ERC20, CTokenInterface {
         uint currentBlockNumber = block.number;
         uint accrualBlockNumberPrior = accrualBlockNumber;
 
+        // console.log("Prior Block Number: ");
+        // console.log(accrualBlockNumberPrior);
+
+        // console.log("Current Block Number: ");
+        // console.log(currentBlockNumber);
+
         require(accrualBlockNumberPrior != currentBlockNumber, "INVALID_BLOCK_NUMBER");
 
         /* Read the previous values out of storage */
@@ -71,18 +78,37 @@ abstract contract CToken is ERC20, CTokenInterface {
         uint reservesPrior = totalReserves;
         uint borrowIndexPrior = borrowIndex;
 
-        uint borrowRate = interestRateModel.getBorrowRate(cashPrior, borrowsPrior, reservesPrior);
+        uint borrowRate = interestRateModel.getBorrowRatePerBlock(cashPrior, borrowsPrior, reservesPrior);
+
+        // console.log("---------Borrows Rate Per Block---------");
+        // console.log(borrowRate);
+        // console.log("----------------------------------------");
 
         uint blockDelta = currentBlockNumber - accrualBlockNumber;
+
+        // console.log("--------------Block Delta--------------");
+        // console.log(blockDelta);
+        // console.log("----------------------------------------");
+
+
         uint simpleInterestFactor = borrowRate * blockDelta;
-        uint interestAccumulated = simpleInterestFactor * borrowsPrior;
-        uint borrowsNew = interestAccumulated + borrowsPrior;
-        uint reservesNew = (interestAccumulated * reserveFactorMantissa) + reservesPrior;
+        uint interestAccumulated = ( simpleInterestFactor * borrowsPrior ) / 10**18;
+
+        
+        // console.log("--------Interest Rate Accumalated-------");
+        // console.log(interestAccumulated);
+        // console.log("----------------------------------------");
+
+        uint borrowsNew = borrowsPrior + interestAccumulated;
+        // uint reservesNew = (interestAccumulated * reserveFactorMantissa) + reservesPrior;
         uint borrowIndexNew = simpleInterestFactor + borrowIndexPrior;
 
         accrualBlockNumber = currentBlockNumber;
+        // console.log("---------------Borrows New--------------");
+        // console.log(borrowsNew);
+        // console.log("----------------------------------------");
         totalBorrows = borrowsNew;
-        totalReserves = reservesNew;
+        // totalReserves = reservesNew;
         borrowIndex = borrowIndexNew;
 
         return true;
@@ -110,19 +136,35 @@ abstract contract CToken is ERC20, CTokenInterface {
              * Otherwise:
              *  exchangeRate = (totalCash + totalBorrows - totalReserves) / totalSupply
              */
+
             uint256 totalCash = getCash();
             uint256 cashPlusBorrowsMinusReserves;
 
             cashPlusBorrowsMinusReserves = totalCash + totalBorrows - totalReserves; // cash in WEI
+
+            // console.log("-------------------------");
+            // console.log("Cash + Borrows - Reserves");
+            // console.log(symbol());
+            // console.log("-------------------------");
+            // console.log(totalCash);
+            // console.log(totalBorrows);
+            // console.log(totalReserves);
+            // console.log(totalSupply() / scaleBy);
+
             return cashPlusBorrowsMinusReserves / ( totalSupply() / scaleBy ); // totalSupply in WEI
         }
     }
 
     /// @notice Explain to an end user what this does
     function redeemInternal(address redeemer, uint redeemTokens) internal {
+        require(accrueInterest() == true, "ACCRUE_INTEREST_FAILED");
+
+        uint exchangeRateMantisa = exchangeRateStored();
+
 
         // calculate the exchange rate and the amount of underlying to be redeemed
-        uint redeemAmount = ( redeemTokens * calculateExchangeRate() ) / scaleBy; // EXCHANGE in WEI
+        uint redeemAmount = ( redeemTokens * exchangeRateMantisa ) / scaleBy; // EXCHANGE in WEI
+
 
         // Fail gracefully if protocol has insufficient cash
         require(getCash() >= redeemAmount, "INSUFFICIENT_CASH");
@@ -137,7 +179,7 @@ abstract contract CToken is ERC20, CTokenInterface {
 
     /// @notice Returns the current borrow interest rate APY for this cToken
     /// @return The borrow interest APY, scaled by 1e18
-    function getBorrowRate() view external returns (uint) {
+    function getBorrowRate() view public returns (uint) {
         // TODO: Can Total Borrows increase than Supply ?
         return interestRateModel.getBorrowRate(getCash(), totalBorrows, totalReserves);
     }
@@ -164,6 +206,7 @@ abstract contract CToken is ERC20, CTokenInterface {
     /// @param borrowAmount a parameter just like in doxygen (must be followed by parameter name)
     /// @return Documents the return variables of a contract’s function state variable
     function borrowInternal(uint borrowAmount) internal returns (bool) {
+        require(accrueInterest(), "ACCRUING_INTEREST_FAILED");
 
         bool isListed = comptroller.isMarketListed(address(this));
 
@@ -180,13 +223,14 @@ abstract contract CToken is ERC20, CTokenInterface {
         require(accountLiquidity > 0, "INSUFFICIENT_LIQUIDITY");
 
         // Get Borrower Balance && Account Borrow += borrow
-        uint borrowBalanceNew = borrowBalance(msg.sender) + borrowAmount;
+        uint borrowBalanceNew = borrowBalanceStored(msg.sender) + borrowAmount;
 
         // Transfer to borrower;
         doTransferOut(msg.sender, borrowAmount);
 
         accountBorrows[msg.sender].principal += borrowBalanceNew;
         accountBorrows[msg.sender].interestIndex = borrowIndex;
+        
         totalBorrows += borrowAmount;
 
         // emit
@@ -194,12 +238,12 @@ abstract contract CToken is ERC20, CTokenInterface {
     }
 
     function borrowBalanceCurrent(address borrower) external returns (uint) {
-        accrueInterest();
+        require(accrueInterest(), "ACCRUING_INTEREST_FAILED");
 
         return borrowBalanceInternal(borrower);
     }
 
-    function borrowBalance(address borrower) view public returns (uint) {
+    function borrowBalanceStored(address borrower) view public returns (uint) {
         return borrowBalanceInternal(borrower);
     }
 
