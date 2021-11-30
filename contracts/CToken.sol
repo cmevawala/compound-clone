@@ -32,6 +32,15 @@ abstract contract CToken is ERC20, CTokenInterface {
         borrowIndex = 1 ** scaleBy;
     }
 
+    /// @notice Explain to an end user what this does
+    /// @return Documents the return variables of a contract’s function state variable
+    function balanceOfUnderlying(address owner) external returns(uint) {
+        
+        require(balanceOf(owner) > 0, "NOT_HAVING_ENOUGH_CTOKENS");
+
+         return (exchangeRateCurrent() * balanceOf(owner)) / scaleBy;
+    }
+
     /// @notice User supplies assets into the market and receives cTokens in exchange
     function mintInternal(address _minter, uint256 _mintAmount) internal {
         /*
@@ -70,7 +79,9 @@ abstract contract CToken is ERC20, CTokenInterface {
         // console.log("Current Block Number: ");
         // console.log(currentBlockNumber);
 
-        require(accrualBlockNumberPrior != currentBlockNumber, "INVALID_BLOCK_NUMBER");
+        if (accrualBlockNumberPrior == currentBlockNumber) {
+            return true;
+        }
 
         /* Read the previous values out of storage */
         uint cashPrior = getCash();
@@ -142,15 +153,6 @@ abstract contract CToken is ERC20, CTokenInterface {
 
             cashPlusBorrowsMinusReserves = totalCash + totalBorrows - totalReserves; // cash in WEI
 
-            // console.log("-------------------------");
-            // console.log("Cash + Borrows - Reserves");
-            // console.log(symbol());
-            // console.log("-------------------------");
-            // console.log(totalCash);
-            // console.log(totalBorrows);
-            // console.log(totalReserves);
-            // console.log(totalSupply() / scaleBy);
-
             return cashPlusBorrowsMinusReserves / ( totalSupply() / scaleBy ); // totalSupply in WEI
         }
     }
@@ -219,16 +221,18 @@ abstract contract CToken is ERC20, CTokenInterface {
 
         // How much max the borrower can borrow - check liquidity
         uint accountLiquidity = comptroller.getAccountLiquidity(msg.sender);
-
+        uint borrowBalanceStoredInternal = borrowBalanceStored(msg.sender);
+        accountLiquidity = accountLiquidity - borrowBalanceStoredInternal;
         require(accountLiquidity > 0, "INSUFFICIENT_LIQUIDITY");
 
+
         // Get Borrower Balance && Account Borrow += borrow
-        uint borrowBalanceNew = borrowBalanceStored(msg.sender) + borrowAmount;
+        uint borrowBalanceNew = borrowBalanceStoredInternal + borrowAmount;
 
         // Transfer to borrower;
         doTransferOut(msg.sender, borrowAmount);
 
-        accountBorrows[msg.sender].principal += borrowBalanceNew;
+        accountBorrows[msg.sender].principal = borrowBalanceNew;
         accountBorrows[msg.sender].interestIndex = borrowIndex;
         
         totalBorrows += borrowAmount;

@@ -160,12 +160,15 @@ describe.only("Comptroller Tests", function () {
     expect(formatUnits(supplyRate)).to.be.equals("0.0");
 
     // Verify borrow, supply and exchange rate before borrow action on CDAI
-    exchangeRate = await cDai.callStatic.exchangeRateStored();  // CY
+    exchangeRate = await cDai.callStatic.exchangeRateCurrent();  // CY
     expect(formatUnits(exchangeRate)).to.be.equals("0.02");
     borrowRate = await cDai.getBorrowRate();
     expect(formatUnits(borrowRate)).to.be.equals("0.02");
     supplyRate = await cDai.getSupplyRate();
     expect(formatUnits(supplyRate)).to.be.equals("0.0");
+
+    let cDaibalanceOfUnderlying = await cDai.callStatic.balanceOfUnderlying(s1.address);
+    expect(formatUnits(cDaibalanceOfUnderlying)).to.be.equal("1000.0");
 
     // ---------------------------------------------------------------------
 
@@ -200,12 +203,18 @@ describe.only("Comptroller Tests", function () {
     expect(formatUnits(supplyRate)).to.be.equals("0.0");
 
     // Verify borrow, supply and exchange rate before borrow action on CDAI
-    exchangeRate = await cDai.callStatic.exchangeRateStored(); // CY
+    exchangeRate = await cDai.callStatic.exchangeRateCurrent(); // CY
     expect(formatUnits(exchangeRate)).to.be.equals("0.02");
     borrowRate = await cDai.getBorrowRate();
     expect(formatUnits(borrowRate)).to.be.equals("0.02");
     supplyRate = await cDai.getSupplyRate();
     expect(formatUnits(supplyRate)).to.be.equals("0.0");
+
+    cDaibalanceOfUnderlying = await cDai.callStatic.balanceOfUnderlying(s1.address);
+    expect(formatUnits(cDaibalanceOfUnderlying)).to.be.equal("1000.0");
+
+    let cEthbalanceOfUnderlying = await cEth.callStatic.balanceOfUnderlying(s2.address);
+    expect(formatUnits(cEthbalanceOfUnderlying)).to.be.equal("1.0");
 
     // ---------------------------------------------------------------------
 
@@ -234,12 +243,18 @@ describe.only("Comptroller Tests", function () {
     expect(formatUnits(supplyRate)).to.be.equals("0.0");
 
     // Verify borrow, supply and exchange rate before borrow action on CDAI
-    exchangeRate = await cDai.callStatic.exchangeRateStored(); // CY
+    exchangeRate = await cDai.callStatic.exchangeRateCurrent(); // CY
     expect(formatUnits(exchangeRate)).to.be.equals("0.02");
     borrowRate = await cDai.getBorrowRate();
     expect(formatUnits(borrowRate)).to.be.equals("0.05");
     supplyRate = await cDai.getSupplyRate();
     expect(formatUnits(supplyRate)).to.be.equals("0.004");
+
+    cDaibalanceOfUnderlying = await cDai.callStatic.balanceOfUnderlying(s1.address);
+    expect(formatUnits(cDaibalanceOfUnderlying)).to.be.equal("1000.0");
+
+    cEthbalanceOfUnderlying = await cEth.callStatic.balanceOfUnderlying(s2.address);
+    expect(formatUnits(cEthbalanceOfUnderlying)).to.be.equal("1.0");
 
     // ---------------------------------------------------------------------
 
@@ -260,6 +275,7 @@ describe.only("Comptroller Tests", function () {
     expect(formatUnits(daiBalance)).to.equals("200.0");
 
 
+
     // ---------------------------------------------------------------------
 
     // Verify borrow, supply and exchange rate before borrow action on CETH
@@ -271,38 +287,29 @@ describe.only("Comptroller Tests", function () {
     expect(formatUnits(supplyRate)).to.be.equals("0.0");
 
     // Verify borrow, supply and exchange rate before borrow action on CDAI
-    exchangeRate = await cDai.callStatic.exchangeRateStored(); // CY
+    exchangeRate = await cDai.callStatic.exchangeRateCurrent(); // CY
     expect(formatUnits(exchangeRate)).to.be.equals("0.020000000047564687");
     borrowRate = await cDai.getBorrowRate();
     expect(formatUnits(borrowRate)).to.be.equals("0.080000000570776254");
     supplyRate = await cDai.getSupplyRate();
     expect(formatUnits(supplyRate)).to.be.equals("0.012800000213089802");
 
-    // // ---------------------------------------------------------------------
+    cDaibalanceOfUnderlying = await cDai.callStatic.balanceOfUnderlying(s1.address);
+    expect(formatUnits(cDaibalanceOfUnderlying)).to.be.equal("1000.00000237823435");
+
+    cEthbalanceOfUnderlying = await cEth.callStatic.balanceOfUnderlying(s2.address);
+    expect(formatUnits(cEthbalanceOfUnderlying)).to.be.equal("1.0");
+
+    // ---------------------------------------------------------------------
 
 
 
-
-    // // Verify borrowed balance with interest if accrued
-    // borrowBalanceStored = await cDai.callStatic.borrowBalanceStored(s2.address);
-    // expect(formatUnits(borrowBalanceStored)).to.be.equal("324.999999999211599999");
+    // Verify borrowed balance with interest if accrued
+    borrowBalanceStored = await cDai.callStatic.borrowBalanceStored(s2.address);
+    expect(formatUnits(borrowBalanceStored)).to.be.equal("224.999999999211599999");
 
 
     // await cDai.connect(s1).redeem(parseUnits("100"));
-
-
-    // // Verify underlying Balance of CEth
-    // const balanceUnderlying = await cEth.callStatic.balanceOfUnderlying(s2.address);
-    // console.log(formatUnits(balanceUnderlying));
   });
-
-  async function logRates() {
-
-
-
-
-
-
-  }
 
 });

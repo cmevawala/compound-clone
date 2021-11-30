@@ -26,15 +26,6 @@ contract CEth is CToken {
 
     /// @notice Explain to an end user what this does
     /// @return Documents the return variables of a contract’s function state variable
-    function balanceOfUnderlying(address owner) external returns(uint) {
-        
-        require(balanceOf(owner) > 0, "NOT_HAVING_ENOUGH_CTOKENS");
-
-        return exchangeRateCurrent() * balanceOf(owner);
-    }
-
-    /// @notice Explain to an end user what this does
-    /// @return Documents the return variables of a contract’s function state variable
     function redeem(uint _redeemTokens) external returns(bool) {
 
         require(balanceOf(msg.sender) > 0, "NO_TOKENS_AVAILABLE.");
