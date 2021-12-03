@@ -42,14 +42,18 @@ contract CEth is CToken {
         return borrowInternal(borrowAmount);
     }
 
+    function borrowRepay() external payable returns(bool) {
+        return borrowRepayInternal(msg.sender, msg.value);
+    }
+
     /// @notice Gets balance of this contract in terms of Ether, before this message
     /// @return The quantity of Ether owned by this contract
     function getCash() internal override view returns (uint) {
         return address(this).balance - msg.value;
     }
 
-    function doTransferIn(address from, uint amount) internal override returns (uint) {
-        return 0;
+    function doTransferIn(address from, uint amount) internal override returns (bool) {
+        return true;
     }
 
     function doTransferOut(address to, uint amount) internal override returns (bool) {

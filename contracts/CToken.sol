@@ -29,7 +29,7 @@ abstract contract CToken is ERC20, CTokenInterface {
         comptroller = _comproller;
 
         accrualBlockNumber = block.number;
-        borrowIndex = 1 ** scaleBy;
+        borrowIndex = 1 * scaleBy;
     }
 
     /// @notice Explain to an end user what this does
@@ -73,12 +73,6 @@ abstract contract CToken is ERC20, CTokenInterface {
         uint currentBlockNumber = block.number;
         uint accrualBlockNumberPrior = accrualBlockNumber;
 
-        // console.log("Prior Block Number: ");
-        // console.log(accrualBlockNumberPrior);
-
-        // console.log("Current Block Number: ");
-        // console.log(currentBlockNumber);
-
         if (accrualBlockNumberPrior == currentBlockNumber) {
             return true;
         }
@@ -91,33 +85,15 @@ abstract contract CToken is ERC20, CTokenInterface {
 
         uint borrowRate = interestRateModel.getBorrowRatePerBlock(cashPrior, borrowsPrior, reservesPrior);
 
-        // console.log("---------Borrows Rate Per Block---------");
-        // console.log(borrowRate);
-        // console.log("----------------------------------------");
-
         uint blockDelta = currentBlockNumber - accrualBlockNumber;
-
-        // console.log("--------------Block Delta--------------");
-        // console.log(blockDelta);
-        // console.log("----------------------------------------");
-
 
         uint simpleInterestFactor = borrowRate * blockDelta;
         uint interestAccumulated = ( simpleInterestFactor * borrowsPrior ) / 10**18;
-
-        
-        // console.log("--------Interest Rate Accumalated-------");
-        // console.log(interestAccumulated);
-        // console.log("----------------------------------------");
-
         uint borrowsNew = borrowsPrior + interestAccumulated;
         // uint reservesNew = (interestAccumulated * reserveFactorMantissa) + reservesPrior;
         uint borrowIndexNew = simpleInterestFactor + borrowIndexPrior;
 
         accrualBlockNumber = currentBlockNumber;
-        // console.log("---------------Borrows New--------------");
-        // console.log(borrowsNew);
-        // console.log("----------------------------------------");
         totalBorrows = borrowsNew;
         // totalReserves = reservesNew;
         borrowIndex = borrowIndexNew;
@@ -163,10 +139,8 @@ abstract contract CToken is ERC20, CTokenInterface {
 
         uint exchangeRateMantisa = exchangeRateStored();
 
-
         // calculate the exchange rate and the amount of underlying to be redeemed
         uint redeemAmount = ( redeemTokens * exchangeRateMantisa ) / scaleBy; // EXCHANGE in WEI
-
 
         // Fail gracefully if protocol has insufficient cash
         require(getCash() >= redeemAmount, "INSUFFICIENT_CASH");
@@ -258,11 +232,34 @@ abstract contract CToken is ERC20, CTokenInterface {
         if (borrowSnapshot.principal == 0) return 0;
 
         return ( borrowSnapshot.principal * borrowIndex ) / borrowSnapshot.interestIndex;
-    } 
+    }
+
+    function borrowRepayInternal(address borrower, uint repayAmount) internal returns (bool) {
+
+        require(accrueInterest(), "ACCRUING_INTEREST_FAILED");
+
+        // Repay Amount is greater than 0
+        require(repayAmount > 0, "REPAY_AMOUNT_LESS_THAN_ZERO");
+        
+        // Current Borrow Balance with Interest
+        uint amountToRepay = borrowBalanceStored(borrower);
+
+        // Amount to Repay must be greater than zero
+        require(repayAmount <= amountToRepay, "REPAY_AMMOUNT_MUST_BE_LESS_THAN");
+
+        doTransferIn(borrower, repayAmount);
+
+        // New Balance = Total Borrow Bal. - repayAmount
+        accountBorrows[borrower].principal = amountToRepay - repayAmount;
+
+        totalBorrows = totalBorrows - repayAmount;
+
+        return true;
+    }
 
     function getCash() virtual view internal returns (uint);
 
-    function doTransferIn(address from, uint amount) internal virtual returns (uint);
+    function doTransferIn(address from, uint amount) internal virtual returns (bool);
 
     function doTransferOut(address to, uint amount) internal virtual returns (bool);
 }

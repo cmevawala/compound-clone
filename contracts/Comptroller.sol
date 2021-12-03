@@ -87,7 +87,7 @@ contract Comptroller {
         }
 
         // After entering user should not be able to transfer or redeem tokens
-        
+
         return  true;
     }
 

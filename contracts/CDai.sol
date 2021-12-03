@@ -49,6 +49,13 @@ contract CDai is CToken {
         return borrowInternal(borrowAmount);
     }
 
+    /// @notice Explain to an end user what this does
+    /// @param borrowAmount a parameter just like in doxygen (must be followed by parameter name)
+    /// @return Documents the return variables of a contract’s function state variable
+    function borrowRepay(uint borrowAmount) external returns(bool) {
+        return borrowRepayInternal(msg.sender, borrowAmount);
+    }
+
     /// @notice Gets balance of this contract in terms of Ether, before this message
     /// @return The quantity of Ether owned by this contract
     function getCash() internal override view returns (uint) {
@@ -56,9 +63,11 @@ contract CDai is CToken {
         return erc20.balanceOf(address(this)) - msg.value;
     }
 
-    function doTransferIn(address from, uint numberOfTokens) internal override returns (uint) {
+    function doTransferIn(address from, uint numberOfTokens) internal override returns (bool) {
         ERC20 erc20 = ERC20(erc20Contract);
         erc20.transferFrom(from, address(this), numberOfTokens);
+
+        return true;
     }
 
     function doTransferOut(address to, uint amount) internal override returns (bool) {
