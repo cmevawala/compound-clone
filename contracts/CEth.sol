@@ -63,13 +63,4 @@ contract CEth is CToken {
 
         return success;
     }
-
-    
-    // collateral / collateral factor - done
-    // calculate account liquidity - how much you can borrow - done
-    // open price feed - USD price of token to borrow - done
-    // enter market and borrow - done
-    // borrowed balance - done
-    // borrow rate - done
-    // repay borrow
 }

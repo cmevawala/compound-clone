@@ -196,9 +196,11 @@ abstract contract CToken is ERC20, CTokenInterface {
         // How much max the borrower can borrow - check liquidity
         uint accountLiquidity = comptroller.getAccountLiquidity(msg.sender);
         uint borrowBalanceStoredInternal = borrowBalanceStored(msg.sender);
-        accountLiquidity = accountLiquidity - borrowBalanceStoredInternal;
-        require(accountLiquidity > 0, "INSUFFICIENT_LIQUIDITY");
 
+        require(accountLiquidity >= borrowBalanceStoredInternal, "INSUFFICIENT_LIQUIDITY");
+        
+        // Reduce Liquidity
+        accountLiquidity = accountLiquidity - borrowBalanceStoredInternal;
 
         // Get Borrower Balance && Account Borrow += borrow
         uint borrowBalanceNew = borrowBalanceStoredInternal + borrowAmount;

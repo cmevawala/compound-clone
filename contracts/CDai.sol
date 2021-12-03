@@ -7,7 +7,6 @@ import "./Comptroller.sol";
 
 import "hardhat/console.sol";
 
-
 contract CDai is CToken {
 
     address erc20Contract;

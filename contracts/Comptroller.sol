@@ -109,11 +109,12 @@ contract Comptroller {
             Market memory market = markets[address(cToken)];
 
             uint price = oracle.getAssetPrice(cToken.symbol());
-            uint suppliedEth = (cToken.balanceOf(borrower) * cToken.exchangeRateStored()) / scaleBy;
 
-            uint ethForLiquidity = ( suppliedEth * market.collateralFactor ) / scaleBy;
-            
-            sum += (ethForLiquidity * price) / scaleBy;
+            uint collateraledToken = (cToken.balanceOf(borrower) * cToken.exchangeRateStored()) / scaleBy;
+
+            uint maxTokenAsCollateral = ( collateraledToken * market.collateralFactor ) / scaleBy;
+
+            sum += (maxTokenAsCollateral * price) / scaleBy;
         }
     }
 
