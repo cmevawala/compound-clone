@@ -37,14 +37,14 @@ describe("CDAI Tests", function () {
 
         await daiContract.connect(signer).transfer(s1.address, parseUnits("10000"));
         daiBalance = await daiContract.balanceOf(s1.address);
-        expect(formatUnits(daiBalance)).to.be.equals("10000.0"); // DAI Balance - S1
+        expect(formatUnits(daiBalance)).to.be.equals("37000.0"); // DAI Balance - S1
 
         // Supply DAI
         await daiContract.connect(s1).approve(cDai.address, parseUnits("100"));
         await cDai.connect(s1).mint(parseUnits("1"));
 
         daiBalance = await daiContract.balanceOf(s1.address);
-        expect(formatUnits(daiBalance)).to.be.equals("9999.0");
+        expect(formatUnits(daiBalance)).to.be.equals("36999.0");
 
         const cTokenBalance = await cDai.balanceOf(s1.address);
         expect(formatUnits(cTokenBalance)).to.be.equals("50.0");
@@ -75,7 +75,7 @@ describe("CDAI Tests", function () {
         expect(formatUnits(cTokenBalance)).to.be.equals("0.0");
 
         daiBalance = await daiContract.balanceOf(s1.address);
-        expect(formatUnits(daiBalance)).to.be.equals("9999.0");
+        expect(formatUnits(daiBalance)).to.be.equals("36999.0");
 
         daiBalance = await daiContract.balanceOf(cDai.address);
         expect(formatUnits(daiBalance)).to.be.equals("0.0");

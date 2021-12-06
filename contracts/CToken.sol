@@ -24,9 +24,9 @@ abstract contract CToken is ERC20, CTokenInterface {
     /// @notice Initialize the money market
     /// @param _initialExchangeRate The initial exchange rate, scaled by 1e18
     /// @param _comptroller The address of the Comptroller
-    /// @param name EIP-20 name of this token
-    /// @param symbol EIP-20 symbol of this token
-    constructor(uint256 _initialExchangeRate, Comptroller _comptroller,  string memory name, string memory symbol) ERC20(name, symbol) {
+    /// @param _name EIP-20 name of this token
+    /// @param _symbol EIP-20 symbol of this token
+    constructor(uint256 _initialExchangeRate, Comptroller _comptroller, string memory _name, string memory _symbol) ERC20(_name, _symbol) {
         require(_initialExchangeRate > 0, "initial exchange rate must be greater than zero.");
 
         initialExchangeRate = _initialExchangeRate;
@@ -36,6 +36,8 @@ abstract contract CToken is ERC20, CTokenInterface {
 
         accrualBlockNumber = block.number;
         borrowIndex = 1 * scaleBy;
+
+        totalReserves = 0;
     }
 
     /// @notice Get balance of underlying asset for the owner
@@ -99,7 +101,7 @@ abstract contract CToken is ERC20, CTokenInterface {
         uint simpleInterestFactor = borrowRate * blockDelta;
         uint interestAccumulated = ( simpleInterestFactor * borrowsPrior ) / 10**18;
         uint totalBorrowsNew = borrowsPrior + interestAccumulated;
-        // uint reservesNew = (interestAccumulated * reserveFactorMantissa) + reservesPrior;
+        // uint reservesNew = (interestAccumulated * RESERVE_FACTOR_MANTISA) + reservesPrior;
         uint borrowIndexNew = simpleInterestFactor + borrowIndexPrior;
 
         accrualBlockNumber = currentBlockNumber;
@@ -114,13 +116,13 @@ abstract contract CToken is ERC20, CTokenInterface {
 
     /// @notice Calculate the up-to-date exchange rate and return
     /// @return Calculated exchange rate
-    function exchangeRateStored() view public returns (uint) {
+    function exchangeRateStored() public view returns (uint) {
         return calculateExchangeRate();
     }
 
     /// @notice Calculates the exchange rate from the underlying to the CToken
     /// @return Calculated exchange rate scaled by 1e18
-    function calculateExchangeRate() view internal returns (uint256) {
+    function calculateExchangeRate() internal view returns (uint256) {
         // 0.020000 => 20000000000000000
         uint256 _totalSupply = totalSupply();
         if (_totalSupply == 0) {
@@ -168,27 +170,27 @@ abstract contract CToken is ERC20, CTokenInterface {
 
     /// @notice Returns the current borrow interest rate APY for this cToken
     /// @return The borrow interest APY, scaled by 1e18
-    function getBorrowRate() view public returns (uint) {
+    function getBorrowRate() public view returns (uint) {
         // TODO: Can Total Borrows increase than Supply ?
         return interestRateModel.getBorrowRate(getCash(), totalBorrows, totalReserves);
     }
 
     // @notice Returns the current per-block borrow interest rate for this cToken
     /// @return The borrow interest rate per block, scaled by 1e18
-    function getBorrowRatePerBlock() view external returns (uint) {
+    function getBorrowRatePerBlock() external view returns (uint) {
         return interestRateModel.getBorrowRatePerBlock(getCash(), totalBorrows, totalReserves);
     }
 
     /// @notice Returns the current supply interest rate APY for this cToken
     /// @return The supply interest rate APY, scaled by 1e18
-    function getSupplyRate() view external returns (uint) {
-        return interestRateModel.getSupplyRate(getCash(), totalBorrows, totalReserves, reserveFactorMantissa) ;
+    function getSupplyRate() external view returns (uint) {
+        return interestRateModel.getSupplyRate(getCash(), totalBorrows, totalReserves, RESERVE_FACTOR_MANTISA) ;
     }
 
     /// @notice Returns the current per-block supply interest rate for this cToken
     /// @return The supply interest rate per block, scaled by 1e18
-    function getSupplyRatePerBlock() view external returns (uint) {
-        return interestRateModel.getSupplyRatePerBlock(getCash(), totalBorrows, totalReserves, reserveFactorMantissa) ;
+    function getSupplyRatePerBlock() external view returns (uint) {
+        return interestRateModel.getSupplyRatePerBlock(getCash(), totalBorrows, totalReserves, RESERVE_FACTOR_MANTISA) ;
     }
 
     /// @notice Allows users to borrow from Market
@@ -246,14 +248,14 @@ abstract contract CToken is ERC20, CTokenInterface {
     /// @notice Explain to an end user what this does
     /// @param borrower a parameter just like in doxygen (must be followed by parameter name)
     /// @return Documents the return variables of a contract’s function state variable
-    function borrowBalanceStored(address borrower) view public returns (uint) {
+    function borrowBalanceStored(address borrower) public view returns (uint) {
         return borrowBalanceInternal(borrower);
     }
 
     /// @notice Calculate borrowed balance of the borrower with interest rate
     /// @param borrower address of the borrower
     /// @return Borrowed balance along with accrured interest
-    function borrowBalanceInternal(address borrower) view internal returns (uint) {
+    function borrowBalanceInternal(address borrower) internal view returns (uint) {
 
         BorrowSnapshot memory borrowSnapshot = accountBorrows[borrower];
 
@@ -292,7 +294,7 @@ abstract contract CToken is ERC20, CTokenInterface {
         return true;
     }
 
-    function getCash() virtual view internal returns (uint);
+    function getCash() virtual internal view returns (uint);
 
     function doTransferIn(address from, uint amount) internal virtual returns (bool);
 

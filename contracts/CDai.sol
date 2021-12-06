@@ -9,7 +9,7 @@ import "hardhat/console.sol";
 
 contract CDai is CToken {
 
-    address erc20Contract;
+    address private erc20Contract;
 
     /// @notice Initialize the money market
     /// @param _erc20Contract The address of the ERC20 contract
@@ -17,6 +17,8 @@ contract CDai is CToken {
     /// @param _comptroller The address of the Comptroller
     constructor(address _erc20Contract, uint256 _initialExchangeRate, Comptroller _comptroller) CToken(_initialExchangeRate, _comptroller, "CDAI Token", "CDAI") {
         admin = msg.sender;
+        
+        require(address(_erc20Contract) != address(0), "INVALID_ERC20_TOKEN_ADDRESS");
         erc20Contract = _erc20Contract;
     }
 
@@ -72,9 +74,10 @@ contract CDai is CToken {
     /// @return Whether or not the transferIn succeeded or not
     function doTransferIn(address from, uint numberOfTokens) internal override returns (bool) {
         ERC20 erc20 = ERC20(erc20Contract);
-        erc20.transferFrom(from, address(this), numberOfTokens);
+        bool success = erc20.transferFrom(from, address(this), numberOfTokens);
+        assert(success == true);
 
-        return true;
+        return success;
     }
 
     /// @notice Perform the actual transfer out
@@ -84,9 +87,12 @@ contract CDai is CToken {
     function doTransferOut(address to, uint amount) internal override returns (bool) {
         ERC20 erc20 = ERC20(erc20Contract);
 
-        erc20.approve(to, amount);
-        erc20.transferFrom(address(this), to, amount);
+        bool success = erc20.approve(to, amount);
+        require(success, "ERC20_APPROVAL_FAILED");
 
-        return true;
+        success = erc20.transferFrom(address(this), to, amount);
+        assert(success == true);
+
+        return success;
     }
 }

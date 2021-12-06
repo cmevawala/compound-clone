@@ -7,12 +7,12 @@ import "hardhat/console.sol";
 
 contract Comptroller {
 
-    uint256 public scaleBy = 10**18;
-    Oracle oracle;
-
     /// @notice Emitted when a collateral factor is changed by admin
     event NewCollateralFactor(CToken cToken, uint oldCollateralFactorMantissa, uint newCollateralFactorMantissa);
 
+    uint256 constant public scaleBy = 10**18;
+
+    Oracle oracle;
 
     address public admin;
 

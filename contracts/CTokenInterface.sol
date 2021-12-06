@@ -16,7 +16,7 @@ contract CTokenInterface {
     uint public totalReserves;
 
     /// @notice Fraction of interest currently set aside for reserves
-    uint constant public reserveFactorMantissa = 0.2 ether;
+    uint constant public RESERVE_FACTOR_MANTISA = 0.2 ether;
 
     /// @notice Block number that interest was last accrued at
     uint public accrualBlockNumber;
