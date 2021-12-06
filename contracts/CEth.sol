@@ -11,12 +11,13 @@ contract CEth is CToken {
 
     /// @notice Initialize the money market
     /// @param _initialExchangeRate The initial exchange rate, scaled by 1e18
+    /// @param _comptroller The address of the Comptroller
     constructor(uint256 _initialExchangeRate, Comptroller _comptroller) CToken(_initialExchangeRate, _comptroller, "CETH Token", "CETH") {
         admin = msg.sender;
     }
 
     /// @notice User supplies assets into the market and receives cTokens in exchange
-    /// @return Whether or not the transfer succeeded
+    /// @return Whether or not the transfer succeeded or not
     function mint() external payable returns (bool) {
 
         mintInternal(msg.sender, msg.value);
@@ -24,8 +25,9 @@ contract CEth is CToken {
         return true;
     }
 
-    /// @notice Explain to an end user what this does
-    /// @return Documents the return variables of a contract’s function state variable
+    /// @notice Sender redeems cTokens in exchange for the underlying asset
+    /// @param _redeemTokens The number of cTokens to redeem into underlying
+    /// @return Whether or not the redeem succeeded or not
     function redeem(uint _redeemTokens) external returns(bool) {
 
         require(balanceOf(msg.sender) > 0, "NO_TOKENS_AVAILABLE.");
@@ -37,11 +39,14 @@ contract CEth is CToken {
     }
 
     /// @notice Borrows assets from the protocol to their own address
-    /// @param borrowAmount a parameter just like in doxygen (must be followed by parameter name)
+    /// @param borrowAmount The amount of the underlying asset to borrow
+    /// @return Whether or not the borrow succeeded or not
     function borrow(uint borrowAmount) external returns(bool) {
         return borrowInternal(borrowAmount);
     }
 
+    /// @notice Sender repays their own borrow
+    /// @return Whether or not the repayment succeeded or not
     function borrowRepay() external payable returns(bool) {
         return borrowRepayInternal(msg.sender, msg.value);
     }
@@ -52,10 +57,18 @@ contract CEth is CToken {
         return address(this).balance - msg.value;
     }
 
+    /// @notice Perform the actual transfer in, which is a no-op
+    /// @param from Address sending the Ether
+    /// @param amount Amount of Ether being sent
+    /// @return Whether or not the transferIn succeeded or not
     function doTransferIn(address from, uint amount) internal override returns (bool) {
         return true;
     }
 
+    /// @notice Perform the actual transfer out
+    /// @param to Address to which the ether needs to be transferred
+    /// @param amount The actual amount of Ether to be transferred
+    /// @return Whether or not the transferOut succeeded or not
     function doTransferOut(address to, uint amount) internal override returns (bool) {
         (bool success, ) = to.call{ value: amount}("");
 

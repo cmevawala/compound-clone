@@ -17,23 +17,30 @@ abstract contract CToken is ERC20, CTokenInterface {
 
     event Mint(address minter, uint256 mintAmount, uint256 mintTokens);
     event Redeem(address redeemer, uint256 redeemAmount, uint256 redeemTokens);
+    event AccrueInterest(uint cashPrior, uint interestAccumulated, uint borrowIndex, uint totalBorrows);
+    event Borrow(address borrower, uint borrowAmount, uint accountBorrows, uint totalBorrows);
+    event RepayBorrow(address borrower, uint repayAmount, uint accountBorrows, uint totalBorrows);
 
     /// @notice Initialize the money market
     /// @param _initialExchangeRate The initial exchange rate, scaled by 1e18
-    constructor(uint256 _initialExchangeRate, Comptroller _comproller,  string memory name, string memory symbol) ERC20(name, symbol) {
+    /// @param _comptroller The address of the Comptroller
+    /// @param name EIP-20 name of this token
+    /// @param symbol EIP-20 symbol of this token
+    constructor(uint256 _initialExchangeRate, Comptroller _comptroller,  string memory name, string memory symbol) ERC20(name, symbol) {
         require(_initialExchangeRate > 0, "initial exchange rate must be greater than zero.");
 
         initialExchangeRate = _initialExchangeRate;
 
         interestRateModel = new InterestRateModel();
-        comptroller = _comproller;
+        comptroller = _comptroller;
 
         accrualBlockNumber = block.number;
         borrowIndex = 1 * scaleBy;
     }
 
-    /// @notice Explain to an end user what this does
-    /// @return Documents the return variables of a contract’s function state variable
+    /// @notice Get balance of underlying asset for the owner
+    /// @param owner The address of the account to query
+    /// @return Balance of underlying asset
     function balanceOfUnderlying(address owner) external returns(uint) {
         
         require(balanceOf(owner) > 0, "NOT_HAVING_ENOUGH_CTOKENS");
@@ -42,6 +49,8 @@ abstract contract CToken is ERC20, CTokenInterface {
     }
 
     /// @notice User supplies assets into the market and receives cTokens in exchange
+    /// @param _minter The address of the account which is supplying the assets
+    /// @param _mintAmount The amount of asset that is supplied
     function mintInternal(address _minter, uint256 _mintAmount) internal {
         /*
          * We get the current exchange rate and calculate the number of cTokens to be minted:
@@ -66,8 +75,8 @@ abstract contract CToken is ERC20, CTokenInterface {
         return calculateExchangeRate();
     }
 
-    /// @notice Explain to an end user what this does
-    /// @return Documents the return variables of a contract’s function state variable
+    /// @notice Accrues interest on the borrowed amount
+    /// @return Wether or not the operation succeeded or not 
     function accrueInterest() public returns (bool) {
 
         uint currentBlockNumber = block.number;
@@ -89,19 +98,21 @@ abstract contract CToken is ERC20, CTokenInterface {
 
         uint simpleInterestFactor = borrowRate * blockDelta;
         uint interestAccumulated = ( simpleInterestFactor * borrowsPrior ) / 10**18;
-        uint borrowsNew = borrowsPrior + interestAccumulated;
+        uint totalBorrowsNew = borrowsPrior + interestAccumulated;
         // uint reservesNew = (interestAccumulated * reserveFactorMantissa) + reservesPrior;
         uint borrowIndexNew = simpleInterestFactor + borrowIndexPrior;
 
         accrualBlockNumber = currentBlockNumber;
-        totalBorrows = borrowsNew;
+        totalBorrows = totalBorrowsNew;
         // totalReserves = reservesNew;
         borrowIndex = borrowIndexNew;
+
+        emit AccrueInterest(cashPrior, interestAccumulated, borrowIndexNew, totalBorrowsNew);
 
         return true;
     }
 
-    /// @notice Accrue interest then return the up-to-date exchange rate
+    /// @notice Calculate the up-to-date exchange rate and return
     /// @return Calculated exchange rate
     function exchangeRateStored() view public returns (uint) {
         return calculateExchangeRate();
@@ -109,7 +120,7 @@ abstract contract CToken is ERC20, CTokenInterface {
 
     /// @notice Calculates the exchange rate from the underlying to the CToken
     /// @return Calculated exchange rate scaled by 1e18
-    function calculateExchangeRate() view internal  returns (uint256) {
+    function calculateExchangeRate() view internal returns (uint256) {
         // 0.020000 => 20000000000000000
         uint256 _totalSupply = totalSupply();
         if (_totalSupply == 0) {
@@ -133,7 +144,9 @@ abstract contract CToken is ERC20, CTokenInterface {
         }
     }
 
-    /// @notice Explain to an end user what this does
+    /// @notice Sender redeems cTokens in exchange for the underlying asset
+    /// @param redeemer The address of the account which is redeeming the CTokens
+    /// @param redeemTokens The no. of CTokens to be redeemed
     function redeemInternal(address redeemer, uint redeemTokens) internal {
         require(accrueInterest() == true, "ACCRUE_INTEREST_FAILED");
 
@@ -179,9 +192,11 @@ abstract contract CToken is ERC20, CTokenInterface {
     }
 
     /// @notice Allows users to borrow from Market
-    /// @param borrowAmount a parameter just like in doxygen (must be followed by parameter name)
-    /// @return Documents the return variables of a contract’s function state variable
+    /// @param borrowAmount The amount of the underlying asset to borrow
+    /// @return Whether or not the borrowed operation succeeded or not
     function borrowInternal(uint borrowAmount) internal returns (bool) {
+        require(borrowAmount > 0, "REDEEM_TOKENS_GREATER_THAN_ZERO.");
+
         require(accrueInterest(), "ACCRUING_INTEREST_FAILED");
 
         bool isListed = comptroller.isMarketListed(address(this));
@@ -213,20 +228,31 @@ abstract contract CToken is ERC20, CTokenInterface {
         
         totalBorrows += borrowAmount;
 
+        emit Borrow(msg.sender, borrowAmount, borrowBalanceNew, totalBorrows);
+
         // emit
         return true;
     }
 
+    /// @notice Explain to an end user what this does
+    /// @param borrower a parameter just like in doxygen (must be followed by parameter name)
+    /// @return Documents the return variables of a contract’s function state variable
     function borrowBalanceCurrent(address borrower) external returns (uint) {
         require(accrueInterest(), "ACCRUING_INTEREST_FAILED");
 
         return borrowBalanceInternal(borrower);
     }
 
+    /// @notice Explain to an end user what this does
+    /// @param borrower a parameter just like in doxygen (must be followed by parameter name)
+    /// @return Documents the return variables of a contract’s function state variable
     function borrowBalanceStored(address borrower) view public returns (uint) {
         return borrowBalanceInternal(borrower);
     }
 
+    /// @notice Calculate borrowed balance of the borrower with interest rate
+    /// @param borrower address of the borrower
+    /// @return Borrowed balance along with accrured interest
     function borrowBalanceInternal(address borrower) view internal returns (uint) {
 
         BorrowSnapshot memory borrowSnapshot = accountBorrows[borrower];
@@ -236,6 +262,10 @@ abstract contract CToken is ERC20, CTokenInterface {
         return ( borrowSnapshot.principal * borrowIndex ) / borrowSnapshot.interestIndex;
     }
 
+    /// @notice Explain to an end user what this does
+    /// @param borrower address of borrower
+    /// @param repayAmount amount that is being repayed
+    /// @return Wether or not the repayment succeeded or not
     function borrowRepayInternal(address borrower, uint repayAmount) internal returns (bool) {
 
         require(accrueInterest(), "ACCRUING_INTEREST_FAILED");
@@ -252,9 +282,12 @@ abstract contract CToken is ERC20, CTokenInterface {
         doTransferIn(borrower, repayAmount);
 
         // New Balance = Total Borrow Bal. - repayAmount
-        accountBorrows[borrower].principal = amountToRepay - repayAmount;
+        uint accountBorrowsNew = amountToRepay - repayAmount;
+        accountBorrows[borrower].principal = accountBorrowsNew;
 
         totalBorrows = totalBorrows - repayAmount;
+
+        emit RepayBorrow(borrower, repayAmount, accountBorrowsNew, totalBorrows);
 
         return true;
     }
