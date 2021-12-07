@@ -2,7 +2,7 @@ const { ethers } = require("hardhat");
 const { formatEther, parseEther, formatUnits } = require("ethers/lib/utils");
 const { expect } = require("chai");
 
-describe("CETH Tests", function () {
+describe("Supply ETH", function () {
   let CEthContract, cEth;
   let owner, s1, s2, s3, s4, s5;
   let ComptrollerContract, comptroller;

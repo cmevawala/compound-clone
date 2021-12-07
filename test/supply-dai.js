@@ -4,7 +4,7 @@ const { expect } = require("chai");
 
 const DaiABI = require("../abi/DaiABI.json");
 
-describe("CDAI Tests", function () {
+describe("Supply DAI", function () {
     let CDaiContract, cDai;
     let owner, s1, s2, s3, s4, s5;
     let daiContract, signer, daiBalance;

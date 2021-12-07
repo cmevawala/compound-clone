@@ -170,7 +170,7 @@ abstract contract CToken is ERC20, CTokenInterface {
 
     /// @notice Returns the current borrow interest rate APY for this cToken
     /// @return The borrow interest APY, scaled by 1e18
-    function getBorrowRate() public view returns (uint) {
+    function getBorrowRate() external view returns (uint) {
         // TODO: Can Total Borrows increase than Supply ?
         return interestRateModel.getBorrowRate(getCash(), totalBorrows, totalReserves);
     }

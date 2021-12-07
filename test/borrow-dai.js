@@ -133,6 +133,9 @@ describe("Borrow DAI by providing ETH as Collateral", function () {
         // S2 Supplying ETH as Collateral
         const overrides = { value: parseEther("1") };
         await cEth.connect(s2).mint(overrides);
+
+        let borrowRate = await cEth.connect(s2).getBorrowRate();
+        expect(formatUnits(borrowRate)).to.be.equals("0.02");
   
         // Enter Market - Supplying ETH as Collateral
         let markets = [cEth.address];
@@ -161,6 +164,12 @@ describe("Borrow DAI by providing ETH as Collateral", function () {
         for (let i = 0; i < 50; i++) {
           await ethers.provider.send("evm_mine");
         }
+
+        let exchangeRate = await cDai.callStatic.exchangeRateCurrent();
+        expect(formatUnits(exchangeRate)).to.be.equals("0.020000001611253948");
+
+        let underlyingBalance = await cEth.callStatic.balanceOfUnderlying(s2.address);
+        expect(formatUnits(underlyingBalance)).to.be.equals("1.0");
   
         borrowBalanceStored = await cDai.callStatic.borrowBalanceCurrent(s2.address);
         expect(formatUnits(borrowBalanceStored)).to.be.equal("75.000084130042040124");

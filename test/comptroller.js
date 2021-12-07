@@ -112,6 +112,9 @@ describe("Comptroller Tests", function () {
     await comptroller.setCollateralFactor(cEth.address, parseUnits("0.75"));
     await comptroller.addMarket(cDai.address);
 
+    let supplyRate = await cEth.getSupplyRate();
+    expect(formatUnits(supplyRate)).to.be.equals("0.0");
+
     // Supply ETH
     const overrides = { value: parseEther("1") };
     await cEth.connect(s1).mint(overrides);
