@@ -80,20 +80,4 @@ describe("Supply DAI", function () {
         daiBalance = await daiContract.balanceOf(cDai.address);
         expect(formatUnits(daiBalance)).to.be.equals("0.0");
     });
-
-    // it("should display the underlying balance of CDAI", async function () {
-
-    //     const overrides = { value: parseUnits("1") };
-
-    //     let suppliers = [s1, s2, s3];
-
-    //     await cDai.connect(s1).mint(overrides);
-    //     await cDai.connect(s2).mint(overrides);
-    //     await cDai.connect(s3).mint(overrides);
-
-    //     // console.log("DAI before Redeeming CDAI: " + formatUnits(await s1.getBalance()));
-
-    //     const balanceUnderlying = await cDai.callStatic.balanceOfUnderlying(s1.address);
-    // });
-
 });

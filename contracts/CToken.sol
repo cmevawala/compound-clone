@@ -47,7 +47,7 @@ abstract contract CToken is ERC20, CTokenInterface {
         
         require(balanceOf(owner) > 0, "NOT_HAVING_ENOUGH_CTOKENS");
 
-         return (exchangeRateCurrent() * balanceOf(owner)) / scaleBy;
+        return (exchangeRateCurrent() * balanceOf(owner)) / scaleBy;
     }
 
     /// @notice User supplies assets into the market and receives cTokens in exchange
@@ -152,6 +152,14 @@ abstract contract CToken is ERC20, CTokenInterface {
     function redeemInternal(address redeemer, uint redeemTokens) internal {
         require(accrueInterest() == true, "ACCRUE_INTEREST_FAILED");
 
+        CToken[] memory accountEnteredMarkets = comptroller.getAccountEnteredMarkets(msg.sender);
+
+        for(uint i = 0; i < accountEnteredMarkets.length; i++) {
+            if (address(accountEnteredMarkets[i]) == address(this)) {
+                revert("REDEEM_FAILED_DUE_TO_ASSET_AS_COLLATERAL");
+            }
+        }
+
         uint exchangeRateMantisa = exchangeRateStored();
 
         // calculate the exchange rate and the amount of underlying to be redeemed
@@ -197,7 +205,7 @@ abstract contract CToken is ERC20, CTokenInterface {
     /// @param borrowAmount The amount of the underlying asset to borrow
     /// @return Whether or not the borrowed operation succeeded or not
     function borrowInternal(uint borrowAmount) internal returns (bool) {
-        require(borrowAmount > 0, "REDEEM_TOKENS_GREATER_THAN_ZERO.");
+        require(borrowAmount > 0, "REDEEM_TOKENS_GREATER_THAN_ZERO");
 
         require(accrueInterest(), "ACCRUING_INTEREST_FAILED");
 
@@ -214,13 +222,9 @@ abstract contract CToken is ERC20, CTokenInterface {
         uint accountLiquidity = comptroller.getAccountLiquidity(msg.sender);
         uint borrowBalanceStoredInternal = borrowBalanceStored(msg.sender);
 
-        require(accountLiquidity >= borrowBalanceStoredInternal, "INSUFFICIENT_LIQUIDITY");
-        
-        // Reduce Liquidity
-        accountLiquidity = accountLiquidity - borrowBalanceStoredInternal;
-
         // Get Borrower Balance && Account Borrow += borrow
         uint borrowBalanceNew = borrowBalanceStoredInternal + borrowAmount;
+        require(borrowBalanceNew <= accountLiquidity, "INSUFFICIENT_LIQUIDITY");
 
         // Transfer to borrower;
         doTransferOut(msg.sender, borrowAmount);
@@ -232,7 +236,6 @@ abstract contract CToken is ERC20, CTokenInterface {
 
         emit Borrow(msg.sender, borrowAmount, borrowBalanceNew, totalBorrows);
 
-        // emit
         return true;
     }
 

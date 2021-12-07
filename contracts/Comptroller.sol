@@ -96,6 +96,7 @@ contract Comptroller {
     }
 
     // function exitMarket() {
+    // If any amount is owed then cannot exit else user can exit the market and transfer can happen
     // }
 
     function getAccountLiquidity(address borrower) view external returns (uint sum) {

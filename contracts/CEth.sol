@@ -30,8 +30,8 @@ contract CEth is CToken {
     /// @return Whether or not the redeem succeeded or not
     function redeem(uint _redeemTokens) external returns(bool) {
 
-        require(balanceOf(msg.sender) > 0, "NO_TOKENS_AVAILABLE.");
         require(_redeemTokens > 0, "REDEEM_TOKENS_GREATER_THAN_ZERO.");
+        require(balanceOf(msg.sender) > 0, "NO_TOKENS_AVAILABLE.");
 
         redeemInternal(msg.sender, _redeemTokens);
 

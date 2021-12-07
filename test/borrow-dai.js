@@ -13,6 +13,8 @@ describe("Borrow DAI by providing ETH as Collateral", function () {
   
     const daiAddress = "0x6b175474e89094c44da98b954eedeac495271d0f";
     const accountToInpersonate = "0x6F6C07d80D0D433ca389D336e6D1feBEA2489264";
+
+    this.timeout(50000);
   
     beforeEach(async function () {
       // Get the ContractFactory and Signers here.
@@ -94,7 +96,7 @@ describe("Borrow DAI by providing ETH as Collateral", function () {
         // Verify borrowed balance of S2 with interest if accrued
         borrowBalanceStored = await cDai.callStatic.borrowBalanceCurrent(s2.address);
         expect(formatUnits(borrowBalanceStored)).to.be.equal("200.000002378234195084");
-    }).timeout(5000);
+    });
   
     it("should not allow the user to borrow more than the liquidity", async function () {
   
